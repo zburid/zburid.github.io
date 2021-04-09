@@ -1137,32 +1137,32 @@ static int imx_dummy_probe(struct platform_device *pdev)
 {
     ... ...
     // 获取 dai-controller 的个数
-	num_dai = of_count_phandle_with_args(np, "dai-controller", NULL);
-	if (num_dai < 1) {
-		dev_err(&pdev->dev, "Need 1 dai to be provided at least\n");
-		return -EINVAL;
-	}
+    num_dai = of_count_phandle_with_args(np, "dai-controller", NULL);
+    if (num_dai < 1) {
+        dev_err(&pdev->dev, "Need 1 dai to be provided at least\n");
+        return -EINVAL;
+    }
     ... ...
-	priv->num_dai = num_dai;
-	priv->dai = devm_kzalloc(&pdev->dev, priv->num_dai *
-							 sizeof(struct snd_soc_dai_link), GFP_KERNEL);
-	if (!priv->dai) {
-		ret = -ENOMEM;
-		goto fail;
-	}
+    priv->num_dai = num_dai;
+    priv->dai = devm_kzalloc(&pdev->dev, priv->num_dai *
+                             sizeof(struct snd_soc_dai_link), GFP_KERNEL);
+    if (!priv->dai) {
+        ret = -ENOMEM;
+        goto fail;
+    }
     // 逐一对声卡初始化
-	for (i = 0; i < num_dai; i++) {
+    for (i = 0; i < num_dai; i++) {
         ... ...
         priv->dai[i].cpus = ...
         ... ...
-		if (strstr(cpu_np->name, "spdif")) {
-			priv->dai[i].ops = &imx_aif_spdif_ops;
-		} else {
-			if (!strstr(cpu_np->name, "sai")) {
-				dev_info(&pdev->dev, "failed to parse sai/spdif device\n");
-			}
-			priv->dai[i].ops = &imx_aif_sai_ops;
-             ... ...
+        if (strstr(cpu_np->name, "spdif")) {
+            priv->dai[i].ops = &imx_aif_spdif_ops;
+        } else {
+            if (!strstr(cpu_np->name, "sai")) {
+                dev_info(&pdev->dev, "failed to parse sai/spdif device\n");
+            }
+            priv->dai[i].ops = &imx_aif_sai_ops;
+            ... ...
         }
     }
     // 注册声卡
@@ -1192,7 +1192,6 @@ card0/  cards
 mek_8q:/ $ cat /proc/asound/cards
  0 [imxdummy       ]: imx-dummy - imx-dummy
                       imx-dummy
-
 ```
 
 参考文档：
