@@ -52,6 +52,13 @@ $ git log origin/master -n 3
 $ git diff HEAD HEAD^ --stat
 ```
 
+#### 7. 强行恢复远程代码到某个版本
+
+```bash
+$ git reset <hash code> --hard  # 恢复本地到某个版本
+$ git push -f                   # 强制远程仓库恢复到本地当前版本
+```
+
 ## 二、远程仓库 `git remote`
 
 ```bash

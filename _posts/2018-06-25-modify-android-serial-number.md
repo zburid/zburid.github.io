@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "修改Android串号"
-date:   2019-08-20 16:48:16 +0800
+date:   2018-06-25 09:13:02 +0800
 categories: notes
 description: "修改默认的Android串号为EMMC串号的组合"
 author: zburid

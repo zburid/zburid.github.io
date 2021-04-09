@@ -17,7 +17,7 @@ typora-root-url: ..
 
 根据TP的名称判断需要将当前的TP事件转发到哪个`displayId`上去。如下程序检测是否为`Atmel`的触摸屏，并将其`displayId`强置为第二个屏幕。
 
-```java
+```diff
 // frameworks/base/services/input/InputReader.cpp
 void TouchInputMapper::dispatchMotion(nsecs_t when, uint32_t policyFlags, uint32_t source,
     ...
