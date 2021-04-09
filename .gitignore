@@ -3,3 +3,10 @@ _site
 .jekyll-cache
 .jekyll-metadata
 vendor
+tmp
+Thumbs.db
+*.tmp
+*.o
+*.bak
+*.bf
+*.sh
