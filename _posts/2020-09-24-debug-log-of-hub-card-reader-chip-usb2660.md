@@ -316,47 +316,7 @@ df93f680 227535981 S Bi:1:003:2 -115 13 <
 df93f680 227536111 C Bi:1:003:2 0 13 = 55534253 22000000 00000000 00
 ```
 
-### 三、SD卡分区读取失败
-
-```text
-[  391.366808] sd 2:0:0:1: [sdb] 248320 512-byte logical blocks: (127 MB/121 MiB)
-[  391.379429]  sdb: unknown partition table
-[  439.415245] sdb: detected capacity change from 127139840 to 0
-[  444.428192] sd 2:0:0:1: [sdb] 15499264 512-byte logical blocks: (7.93 GB/7.39 GiB)
-[  444.443662]  sdb: sdb1
-[  444.662441] FAT-fs (sdb1): Volume was not properly unmounted. Some data may be corrupt. Please run fsck.
-
-[ 1376.394150] sd 2:0:0:1: [sdb] 486998016 512-byte logical blocks: (249 GB/232 GiB)
-[ 1376.771178] sd 2:0:0:1: [sdb]
-[ 1376.774169] Result: hostbyte=0x00 driverbyte=0x08
-[ 1376.778867] sd 2:0:0:1: [sdb]
-[ 1376.781956] Sense Key : 0x3 [current]
-[ 1376.785704] sd 2:0:0:1: [sdb]
-[ 1376.788800] ASC=0x11 ASCQ=0x0
-[ 1376.791749] sd 2:0:0:1: [sdb] CDB:
-[ 1376.795221] cdb[0]=0x28: 28 00 00 00 00 00 00 00 08 00
-[ 1376.800343] Buffer I/O error on dev sdb, logical block 0, async page read
-[ 1376.809869] ldm_validate_partition_table(): Disk read failed.
-[ 1376.815505]  sdb: unable to read partition table
-[ 1394.831247] sdb: detected capacity change from 249342984192 to 0
-[ 1397.857400] sd 2:0:0:1: [sdb] 486998016 512-byte logical blocks: (249 GB/232 GiB)
-[ 1397.872392]  sdb: sdb1
-[ 1397.890779] FAT-fs (sdb1): bogus number of reserved sectors
-[ 1397.896379] FAT-fs (sdb1): Can't find a valid FAT filesystem
-[ 1397.903719] exFAT-fs (sdb1[8:17]): trying to mount...
-[ 1397.912142] exFAT-fs (sdb1[8:17]): set logical sector size  : 512
-[ 1397.918277] exFAT-fs (sdb1[8:17]): (bps : 512, spc : 256, data start : 18432, aligned)
-[ 1397.926753] exFAT-fs (sdb1[8:17]): detected volume size     : 243466240 KB (disk : 243499008 KB, part : 243466240 KB)
-[ 1398.159083] exFAT-fs (sdb1[8:17]): mounted successfully!
-```
-
-正常一个8GB的SD卡，有时候读取显示只有128MB且未知分区表，或者干脆显示不能读取分区表，造成SD卡设备识别失败，尤其是在同时插入U盘设备的时候，该现象出现概率大大增加。
-
-把静电管取了
-
-
-
-### 四、兼容无HUB状态
+### 三、兼容无HUB状态
 
 在插入读卡器HUB和不插入的情况下，都需要对U盘的正常挂载。
 
@@ -440,6 +400,117 @@ index 69163dc238..5640f0232a 100755
      mkdir(v->mount_point, 0755);  // in case it doesn't already exist
 ```
 
+### 四、SD卡分区读取失败或偶尔不能检测到SD卡插入问题
+
+```text
+[  391.366808] sd 2:0:0:1: [sdb] 248320 512-byte logical blocks: (127 MB/121 MiB)
+[  391.379429]  sdb: unknown partition table
+[  439.415245] sdb: detected capacity change from 127139840 to 0
+[  444.428192] sd 2:0:0:1: [sdb] 15499264 512-byte logical blocks: (7.93 GB/7.39 GiB)
+[  444.443662]  sdb: sdb1
+[  444.662441] FAT-fs (sdb1): Volume was not properly unmounted. Some data may be corrupt. Please run fsck.
+
+[ 1376.394150] sd 2:0:0:1: [sdb] 486998016 512-byte logical blocks: (249 GB/232 GiB)
+[ 1376.771178] sd 2:0:0:1: [sdb]
+[ 1376.774169] Result: hostbyte=0x00 driverbyte=0x08
+[ 1376.778867] sd 2:0:0:1: [sdb]
+[ 1376.781956] Sense Key : 0x3 [current]
+[ 1376.785704] sd 2:0:0:1: [sdb]
+[ 1376.788800] ASC=0x11 ASCQ=0x0
+[ 1376.791749] sd 2:0:0:1: [sdb] CDB:
+[ 1376.795221] cdb[0]=0x28: 28 00 00 00 00 00 00 00 08 00
+[ 1376.800343] Buffer I/O error on dev sdb, logical block 0, async page read
+[ 1376.809869] ldm_validate_partition_table(): Disk read failed.
+[ 1376.815505]  sdb: unable to read partition table
+[ 1394.831247] sdb: detected capacity change from 249342984192 to 0
+[ 1397.857400] sd 2:0:0:1: [sdb] 486998016 512-byte logical blocks: (249 GB/232 GiB)
+[ 1397.872392]  sdb: sdb1
+[ 1397.890779] FAT-fs (sdb1): bogus number of reserved sectors
+[ 1397.896379] FAT-fs (sdb1): Can't find a valid FAT filesystem
+[ 1397.903719] exFAT-fs (sdb1[8:17]): trying to mount...
+[ 1397.912142] exFAT-fs (sdb1[8:17]): set logical sector size  : 512
+[ 1397.918277] exFAT-fs (sdb1[8:17]): (bps : 512, spc : 256, data start : 18432, aligned)
+[ 1397.926753] exFAT-fs (sdb1[8:17]): detected volume size     : 243466240 KB (disk : 243499008 KB, part : 243466240 KB)
+[ 1398.159083] exFAT-fs (sdb1[8:17]): mounted successfully!
+```
+
+正常一个8GB的SD卡，有时候读取显示只有128MB且未知分区表，或者干脆显示不能读取分区表，造成SD卡设备识别失败，尤其是在同时插入U盘设备的时候，该现象出现概率大大增加。如果对SD卡拔插不需要太频繁的情况下，上面的方法已经可以接受了。如果考虑到用户体验的话，还需要进行下一步修改。
+
+下载`USBDM`软件并安装，在读卡器上焊接一个`eeprom`，接入到PC上，参照[用户手册][USBDM-USER-GUIDE]，执行如下操作：
+
+![USBDM配置SD卡检测][USBDM-configure]
+
+配置SD卡插入时才创建盘符`sdx`，而不是像之前那样只要插入HUB就立即创建盘符`sdx`，这样基本可以确保每次拔插SD卡时内核都能检测到相关事件，拔插SD卡就相当于拔插U盘。
+
+但是同样的也会存在SD卡、U盘等拔插过于频繁，系统上层没来得及卸载磁盘时导致的SD卡与U盘的盘符是不固定的，这为系统上层判断挂载设备到哪个目录上带来了新的问题。
+
+为解决此类问题，需要在系统上层判断是否为SD卡还是U盘，可以通过USB设备的`VendorID`和`ProductID`来判断当前插入的设备是外接U盘还是SD卡，已知插入SD卡USB设备的`VID`为`0424`，`PID`为`4040`：
+
+```diff
+diff --git a/system/vold/DirectVolume.cpp b/system/vold/DirectVolume.cpp
+index 0ff5f98..4be52e1 100755
+--- a/system/vold/DirectVolume.cpp
++++ b/system/vold/DirectVolume.cpp
+@@ -127,14 +127,59 @@ void DirectVolume::handleVolumeUnshared() {
+     setState(Volume::State_Idle);
+ }
+
++bool DirectVolume::isSDCardId(const char * devpath) {
++    const char *sdcard_pid = "4040";
++    const char *sdcard_vid = "0424";
++    char pid[8] = {0}, vid[8] = {0};
++    char* pidx = NULL;
++    char syspath[255];
++
++    snprintf(syspath, sizeof(syspath), "/sys%s", devpath);
++    pidx = strstr(syspath, "/host");
++    if (pidx != NULL) {
++        pidx[0] = '\0';
++        pidx = strrchr(syspath, '/');
++        if (pidx != NULL) {
++            char tmppath[255];
++            int fd = -1;
++            pidx[0] = '\0';
++
++            snprintf(tmppath, sizeof(tmppath), "%s/idProduct", syspath);
++            fd = open(tmppath, O_RDONLY, 0);
++            if (fd != -1) {
++                read(fd, pid, 8);
++                SLOGE("%s: %s", __func__, pid);
++                if (strstr(pid, sdcard_pid)) {
++                    snprintf(tmppath, sizeof(tmppath), "%s/idVendor", syspath);
++                    fd = open(tmppath, O_RDONLY, 0);
++                    if (fd != -1) {
++                        read(fd, vid, 8);
++                        SLOGE("%s: %s", __func__, vid);
++                        if (strstr(vid, sdcard_vid)) {
++                            return true;
++                        }
++                    }
++                }
++            }
++        }
++    }
++    return false;
++}
++
+ int DirectVolume::handleBlockEvent(NetlinkEvent *evt) {
+     const char *dp = evt->findParam("DEVPATH");
++    bool issd = isSDCardId(dp);
+
+     int connectedType = 0;
+     PathCollection::iterator  it;
++
++
+     for (it = mPaths->begin(); it != mPaths->end(); ++it) {
+         connectedType++;
+-        if (strstr(dp, *it)) {
++        bool is_det_sd = strstr(*it, "sdb");
++        SLOGE("handleBlockEvent: %s: %d/%d", *it, is_det_sd, issd);
++        if ((is_det_sd && issd) || (!is_det_sd && !issd)) {
+             /* We can handle this disk */
+```
+
 参考资料：
 [Android存储系统解析](https://blog.csdn.net/gulinxieying/article/details/78676706)
 
@@ -454,3 +525,5 @@ index 69163dc238..5640f0232a 100755
 [udevadm-使用 udev 进行动态内核设备管理](https://documentation.suse.com/zh-cn/sles/15-SP1/html/SLES-all/cha-udev.html)
 
 [USB2660-datasheet]: http://ww1.microchip.com/downloads/en/DeviceDoc/USB2660-USB2660i-Data-Sheet-DS00001931B.pdf
+[USBDM-USER-GUIDE]: http://ww1.microchip.com/downloads/en/DeviceDoc/50002293A.pdf
+[USBDM-configure]: /images/usbdm-configure.png
