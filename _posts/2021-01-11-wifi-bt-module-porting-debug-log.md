@@ -5,7 +5,7 @@ date:   2021-01-11 13:34:20 +0800
 categories: notes
 description: "顾凯BA440蓝牙WiFi模块驱动移植过程记录"
 author: zburid
-tags:   WiFi 蓝牙 模块 驱动 移植
+tags:   WiFi 蓝牙 模块 驱动 移植 iMX8
 typora-root-url: ..
 mermaid: true
 ---

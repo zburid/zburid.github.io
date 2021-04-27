@@ -5,7 +5,7 @@ date:   2021-02-25 13:46:06 +0800
 categories: notes
 description: "Android多声卡解决方案实现及其相关知识点的记录"
 author: zburid
-tags:   Android 多声卡 音频 SPDIF I2S ALSA
+tags:   Android 多声卡 音频 SPDIF I2S ALSA iMX8
 typora-root-url: ..
 mermaid: true
 ---

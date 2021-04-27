@@ -5,34 +5,161 @@ date:   2021-04-24 12:32:42 +0800
 categories: notes
 description: "FPD-Link芯片DS90UB941/8及其相关功能的调试记录"
 author: zburid
-tags:   FPD-Link MIPI TI TP Goodix
+tags:   FPD-Link MIPI TI TP Goodix iMX8
 typora-root-url: ..
 mermaid: true
 ---
 
 ### 一、`FPD-Link`简介
 
-**`FPD-Link`**全称为`Flat panel display link`，目前版本为`FPD-Link III`，常被应用于汽车领域用于点对点传输视频数据。该接口可通过双绞线（`STP`）或同轴电缆（`COAX`）的低成本电缆传输**数字高清视频**和**双向控制信道**。
+[**`FPD-Link`**][FPD-Link-overview]全称为`Flat panel display link`，目前版本为`FPD-Link III`，其旨要在于通过更少的导线在汽车系统中快速传输高分辨率、未压缩的数据，常被应用于汽车领域用于点对点传输视频数据。该接口可通过低成本电缆如双绞线（`STP`）或同轴电缆（`COAX`）传输**数字高清视频**和**双向控制信道**。
 
-
+借助 `FPD-Link` 串行器（`Serializer`）和解串器（`Deserializer`）可以为汽车系统中的各种视频接口（包括用于高级驾驶辅助系统 `ADAS`的摄像头`Camera`和信息娱乐系统`IVI`显示屏`Display`）优化高分辨率信号的设计和传输。
 
 ### 二、功能需求
 
+我们采用[DS90UB941AS-Q1][DS90UB941AS-Q1-datasheet]和[DS90UB948-Q1][DS90UB948-Q1-datasheet]作为分体机显示方案：
 
+![DS90UB941应用][DS90UB941-application]
 
-
-
-
-
-
-
-
-
-
-
-
+该方案中，显示屏幕（`OpenLDI`）与触摸屏（`I2C/GPIO`）连接在`DS90UB948`上，`DS90UB948`与`DS90UB941`通过`FPD-Link`连接，最后`DS90UB941`通过相关接口（`MIPI-DSI/I2C/GPIO`）与`SOC`相连。经过相关配置，在`I2C`总线上，`SOC`不仅可以与`DS90UB941`通信，还能与`DS90UB948`和触摸屏芯片通信。对于`GPIO`和`INT`也是同样的道理。
 
 ### 三、显示功能调试
+
+#### 1、MIPI-DSI输出
+
+首先需要实现`SOC`输出`MIPI-DSI`信号。由于`SOC`中`MIPI-DSI`与`OpenLDI`可能是复用在一起的，所以要确认好当前系统的输出信号类型，否则后续调试都是不能进行的。
+
+![iMX8 MIPI DSI原理图][iMX8-MIPI-DSI]
+
+如上所示`iMX8`中有两路`MIPI-DSI`输出信号，每一路`MIPI-DSI`配有一路`I2C`接口和两个`GPIO`管脚。先在`DTS`中配置`MIPI-DSI`输出：
+
+`imx8x-mek.dtsi`中关闭默认的`OpenLDI`输出：
+
+```diff
+ &ldb1_phy {
+-	status = "okay";
++	status = "disabled";
+ };
+ 
+ &ldb1 {
+-	status = "okay";
++	status = "disabled";
+ };
+
+ &mipi0_dphy {
+     status = "okay";
+ };
+```
+
+参考`imx8qxp-mek-dsi-rm67191.dts`文件配置`MIIPI-DSI`输出：
+
+```diff
+ &mipi0_dsi_host {
+ 	status = "okay";
+
++	panel@0 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		compatible = "test,panel";
++		reg = <0>;
++
++		port@0 {
++			reg = <0>;
++			panel0_in: endpoint {
++				remote-endpoint = <&mipi0_panel_out>;
++			};
++		};
++	};
++ 
+  	ports {
+  		port@1 {
+  			reg = <1>;
+ 			mipi0_panel_out: endpoint {
+-				remote-endpoint = <&adv7535_0_in>;
++				remote-endpoint = <&panel0_in>;
+ 			};
+ 		};
+ 	};
+ };
+```
+
+参考供应商提供的面板说明书，在`kernel_imx/drivers/gpu/drm/panel/panel-simple.c`中添加需要的屏参：
+
+```diff
++static const struct drm_display_mode test_mode = {
++	.clock = 81000,
++	.hdisplay = 1920,
++	.hsync_start = 1920 + 20,
++	.hsync_end = 1920 + 20 + 2,
++	.htotal = 1920 + 20 + 2 + 34,
++	.vdisplay = 1080,
++	.vsync_start = 1080 + 10,
++	.vsync_end = 1080 + 10 + 2,
++	.vtotal = 1080 + 10 + 2 + 4,
++	.vrefresh = 60,
++	.flags = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC,
++};
++
++static const struct panel_desc_dsi test_panel = {
++	.desc = {
++		.modes = &test_mode,
++		.num_modes = 1,
++		.bpc = 8,
++		.size = {
++			.width = 62,
++			.height = 110,
++		},
++	},
++	.flags = MIPI_DSI_MODE_VIDEO,
++	.format = MIPI_DSI_FMT_RGB888,
++	.lanes = 4,
++};
++
+ static const struct of_device_id dsi_of_match[] = {
+ 	{
+ 		.compatible = "auo,b080uan01",
+@@ -3744,6 +3773,9 @@ static const struct of_device_id dsi_of_match[] = {
+ 	}, {
+ 		.compatible = "osddisplays,osd101t2045-53ts",
+ 		.data = &osd101t2045_53ts
++	}, {
++		.compatible = "test,panel",
++		.data = &test_panel
+ 	}, {
+ 		/* sentinel */
+ 	}
+```
+
+重新编译内核并烧录，通过日志可以确认`MIPI-DSI`是否正常工作：
+
+```log
+[    7.228793] imx-drm display-subsystem: bound imx-drm-dpu-bliteng.2 (ops dpu_bliteng_ops)
+[    7.237337] imx-drm display-subsystem: bound imx-dpu-crtc.0 (ops dpu_crtc_ops)
+[    7.244934] imx-drm display-subsystem: bound imx-dpu-crtc.1 (ops dpu_crtc_ops)
+[    7.252678] imx-drm display-subsystem: bound 56228000.dsi_host (ops nwl_dsi_component_ops)
+[    7.261331] imx-drm display-subsystem: bound 56248000.dsi_host (ops nwl_dsi_component_ops)
+```
+
+如果驱动加载失败，日志会有提示`bound`失败的报错。
+
+```text
+mek_8q:/ # ls sys/class/drm/card1/
+card1-DSI-1 card1-DSI-2 consumers dev device power subsystem suppliers uevent
+mek_8q:/ # ls dev/dri/
+card0 card1 renderD128 renderD129
+```
+
+通过如上命令即可查看到系统中是否创建了显卡设备。如果创建成功，即可通过`Total Control`或者`scrcpy`等投屏工具，实现从`adb`获取当前显示界面。
+
+#### 2、FPD-Link调试
+
+
+
+
+
+#### 3、DS90UB94X驱动
 
 
 ```cpp
@@ -89,12 +216,6 @@ static void ds90ub94x_display_setting(void)
 	ds90ub94x_write_reg(g_ds90ub94x->ds90ub948_i2c, 0x1A, 0x09); /* lcd_en：使能LCD的输入 */
 	ds90ub94x_write_reg(g_ds90ub94x->ds90ub948_i2c, 0x1E, 0x90); /* lcd_led_en：背光显示 */
 	ds90ub94x_write_reg(g_ds90ub94x->ds90ub948_i2c, 0x1F, 0x09);
-
-	/* test mode */
-#if 0
-	ds90ub94x_write_reg(g_ds90ub94x->ds90ub941_i2c, 0x65, 0x08);
-	ds90ub94x_write_reg(g_ds90ub94x->ds90ub941_i2c, 0x64, 0x15);
-#endif
 }
 
 static int ds90ub94x_probe(struct i2c_client *client, const struct i2c_device_id *id)
@@ -209,6 +330,11 @@ EXPORT_SYMBOL(ds90ub94x_set_i2c);
 
 
 
+[FPD-Link-overview]: https://www.ti.com.cn/zh-cn/interface/fpd-link-serdes/overview.html
 [FPD-LINK-III-learning-note]: https://zhuanlan.zhihu.com/p/328429295
 [DS90UB941AS-Q1-DSI-Bringup-Guide]: https://www.ti.com/lit/pdf/snla356
+[DS90UB941AS-Q1-datasheet]: http://www.ti.com/product/ds90ub941as-q1?qgpn=ds90ub941as-q1
+[DS90UB948-Q1-datasheet]: http://www.ti.com/product/ds90ub948-q1?qgpn=ds90ub948-q1
+[DS90UB941-application]: /images/ds90ub941_application.png
+[iMX8-MIPI-DSI]: /images/imx8_mipi_dsi_schematic.png
 
