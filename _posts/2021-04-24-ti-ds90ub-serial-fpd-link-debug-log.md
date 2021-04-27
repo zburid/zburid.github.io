@@ -32,7 +32,7 @@ mermaid: true
 
 ![iMX8 MIPI DSI原理图][iMX8-MIPI-DSI]
 
-如上所示`iMX8`中有两路`MIPI-DSI`输出信号，每一路`MIPI-DSI`配有一路`I2C`接口和两个`GPIO`管脚。先在`DTS`中配置`MIPI-DSI`输出：
+如上所示`SOC`中有两路`MIPI-DSI`输出信号，每一路`MIPI-DSI`配有一路`I2C`接口和两个`GPIO`管脚。先在`DTS`中配置`MIPI-DSI`输出：
 
 `imx8x-mek.dtsi`中关闭默认的`OpenLDI`输出：
 
@@ -52,7 +52,7 @@ mermaid: true
  };
 ```
 
-参考`imx8qxp-mek-dsi-rm67191.dts`文件配置`MIIPI-DSI`输出：
+参考`imx8qxp-mek-dsi-rm67191.dts`文件配置`MIPI-DSI`输出：
 
 ```diff
  &mipi0_dsi_host {
@@ -155,11 +155,176 @@ card0 card1 renderD128 renderD129
 
 #### 2、FPD-Link调试
 
+通常，`DS90UB941`与`SOC`之间通过相应的`MIPI-DSI-I2C`相连。首先确保`I2C`是打开的：
+
+```dts
+&i2c0_mipi_lvds0 {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_i2c0_mipi_lvds0>;
+        clock-frequency = <100000>;
+        status = "okay";
+};
+```
+
+通过`i2c-tools`工具包中的命令检测`I2C`总线是否生成：
+
+```shell
+mek_8q:/ # i2cdetect -l
+```
+
+查看当前`I2C`总线上“挂载”的所有设备：
+
+```shell
+mek_8q:/ # i2cdetect -y 16
+Probe chips 0x00-0x7f on bus 16? (Y/n):
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00: -- -- -- -- -- -- -- -- -- -- -- -- 0c -- -- --
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+30: -- -- -- UU -- -- -- -- -- -- -- -- -- -- -- --
+40: -- -- -- -- -- -- -- -- -- -- -- -- UU -- -- --
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+70: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+```
+
+查看当前的`0x0C`设备是什么设备，可以通过`dummp`其内部寄存器查看：
+
+```shell
+mek_8q:/ # i2cdump -f -y 16 0x0c
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f    0123456789abcdef
+00: 18 00 00 92 00 00 5c 00 00 01 0e 00 27 30 00 00    ?..?..\..??.'0..
+10: 00 00 00 8b 00 00 fe 1e 7f 7f 01 00 00 00 01 00    ...?..?????...?.
+20: 0b 00 25 00 00 00 00 00 01 20 20 a0 00 00 a5 5a    ?.%.....?  ?..?Z
+30: 00 09 00 05 0c 00 00 00 00 00 00 00 00 00 81 02    .?.??.........??
+40: 10 90 00 00 00 00 00 00 00 00 00 00 00 00 00 8c    ??.............?
+50: 16 00 00 00 02 00 00 02 00 00 d9 00 07 06 44 31    ?...?..?..?.??D1
+60: 22 02 00 00 10 00 00 00 00 00 00 00 00 00 20 00    "?..?......... .
+70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 7f 00    ..............?.
+80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+c0: 00 00 82 00 38 00 00 64 40 00 00 00 00 02 ff 00    ..?.8..d@....??.
+d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+e0: 00 00 82 00 28 08 00 00 00 00 00 00 00 02 00 00    ..?.(?.......?..
+f0: 5f 55 42 39 34 31 00 00 00 00 00 00 00 00 00 00    _UB941..........
+```
+
+能够看到`0x0C`设备即是`DS90UB941`：
+
+```shell
+i2cport=16
+seraddr=0x0c
+```
+
+然后可以根据芯片手册配置如下：
+
+```shell
+i2cset -fy $i2cport $seraddr 0x01 0x0f b    # Reset DSI/DIGITLE
+i2cset -fy $i2cport $seraddr 0x1E 0x01 b    # Select FPD-Link III Port 0
+i2cset -fy $i2cport $seraddr 0x03 0xBA b    # Enable FPD-Link I2C pass through
+i2cset -fy $i2cport $seraddr 0x5B 0x0B b    # FPD3_TX_MODE=Dual, Align on DE
+i2cset -fy $i2cport $seraddr 0x4F 0x0C b    # DSI Continuous Clock Mode, DSI 4 lanes
+
+ser_dsireg_write 0 0x05 0x14                # Set DSI0 TSKIP_CNT value
+
+i2cset -fy $i2cport $seraddr 0x01 0x00 b    # Release DSI/DIGITLE reset
+```
+
+其中`DSI`寄存器需要间接访问，具体操作的方法如下：
+
+```shell
+function ser_dsireg_write(){
+    # UB941 device DSI registers write
+    # Args:
+    #   $1: port    : 0/1
+    #   $2: addr    : DSI registers indirect address to set
+    #   $3: value   : DSI registers indirect value to set
+    port=0x04
+    if [ $1 -eq 1 ]; then
+        port=0x08
+    fi
+    i2cset -fy $i2cport $seraddr 0x40 $port b
+    i2cset -fy $i2cport $seraddr 0x41 $2 b  # IND_ACC_ADDR
+    i2cset -fy $i2cport $seraddr 0x42 $3 b  # IND_ACC_DATA
+}
+
+function ser_dsireg_dump(){
+    # UB941 device DSI registers dump
+    # Args:
+    #   $1: port    : 0/1
+    port=0x07
+    if [ $1 -eq 1 ]; then
+        port=0x0B
+    fi
+    i2cset -fy $i2cport $seraddr 0x40 $port b
+    i2cset -fy $i2cport $seraddr 0x41 0x00 b
+    echo "Dumped DSI"$1" registers here:"
+    echo "     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f"
+    for i in $(seq 0 3)
+    do
+        echo -n $i"0: "
+        for j in $(seq 0 15)
+        do
+            res=`i2cget -fy 17 0x0c 0x42`
+            echo -n ${res: 2: 2}" "
+        done
+        echo " "
+    done
+}
+```
+
+通常其他硬件等方面配置正常的话，如上的操作基本上可以实现屏幕的显示。
+
+#### 3、相关问题
+
+由于`FPD-Link`在车载领域的广泛应用，`TI`已经总结了相关[调试流程][DS90UB941AS-Q1-DSI-Bringup-Guide]，按照如下流程即可实现对`FPD-Link`的快速调试：
+
+![DS90UB941调试流程][DS90UB941-bringup-flow]
+
+##### 3.1 不能显示图像
+
+首先确认芯片配置的工作模式是否正常。
+
+
+
+其次确认`FPD-Link`通路是否正常。
+
+在没有`MIPI`信号或者不能正常显示的情况下，可以通过使用`PATGEN`的方法来调试：
+
+```shell
+i2cset -fy $i2cport $seraddr 0x56 0x00 b    # Bridge Clocking Mode: 0 DSI Clock, 1 Ext Clock, 2 Int Clock, 3 Ext ref Clock
+i2cset -fy $i2cport $seraddr 0x65 0x40 b    # PATGEN_EXTCLK: external pixel clock
+                                            # PATGEN_TSEL: Patgen uses external video timing
+i2cset -fy $i2cport $seraddr 0x64 0x01 b    # Enable PATGEN/Colorbar/Checkerboard
+```
+
+
+
+最后确认`MIPI-DSI`输入信号是否正常。
 
 
 
 
-#### 3、DS90UB94X驱动
+
+##### 3.2 图像颜色异常
+
+画面颜色有偏色异常。
+
+
+
+画面颜色多为灰色异常。
+
+
+
+##### 3.3 图像上下抖动
+
+
+
+#### 4、驱动实现
 
 
 ```cpp
@@ -336,5 +501,6 @@ EXPORT_SYMBOL(ds90ub94x_set_i2c);
 [DS90UB941AS-Q1-datasheet]: http://www.ti.com/product/ds90ub941as-q1?qgpn=ds90ub941as-q1
 [DS90UB948-Q1-datasheet]: http://www.ti.com/product/ds90ub948-q1?qgpn=ds90ub948-q1
 [DS90UB941-application]: /images/ds90ub941_application.png
+[DS90UB941-bringup-flow]: /images/ds90ub941_bringup_flow.png
 [iMX8-MIPI-DSI]: /images/imx8_mipi_dsi_schematic.png
 
