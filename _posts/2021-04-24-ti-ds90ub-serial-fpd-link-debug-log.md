@@ -10,13 +10,13 @@ typora-root-url: ..
 mermaid: true
 ---
 
-### 一、`FPD-Link`简介
+## 一、`FPD-Link`简介
 
 [**`FPD-Link`**][FPD-Link-overview]全称为`Flat panel display link`，目前版本为`FPD-Link III`，其旨要在于通过更少的导线在汽车系统中快速传输高分辨率、未压缩的数据，常被应用于汽车领域用于点对点传输视频数据。该接口可通过低成本电缆如双绞线（`STP`）或同轴电缆（`COAX`）传输**数字高清视频**和**双向控制信道**。
 
 借助 `FPD-Link` 串行器（`Serializer`）和解串器（`Deserializer`）可以为汽车系统中的各种视频接口（包括用于高级驾驶辅助系统 `ADAS`的摄像头`Camera`和信息娱乐系统`IVI`显示屏`Display`）优化高分辨率信号的设计和传输。
 
-### 二、功能需求
+## 二、功能需求
 
 我们采用[DS90UB941AS-Q1][DS90UB941AS-Q1-datasheet]和[DS90UB948-Q1][DS90UB948-Q1-datasheet]作为分体机显示方案：
 
@@ -24,9 +24,9 @@ mermaid: true
 
 该方案中，显示屏幕（`OpenLDI`）与触摸屏（`I2C/GPIO`）连接在`DS90UB948`上，`DS90UB948`与`DS90UB941`通过`FPD-Link`连接，最后`DS90UB941`通过相关接口（`MIPI-DSI/I2C/GPIO`）与`SOC`相连。经过相关配置，在`I2C`总线上，`SOC`不仅可以与`DS90UB941`通信，还能与`DS90UB948`和触摸屏芯片通信。对于`GPIO`和`INT`也是同样的道理。
 
-### 三、显示功能调试
+## 三、显示功能调试
 
-#### 1、MIPI-DSI输出
+### 1、MIPI-DSI输出
 
 首先需要实现`SOC`输出`MIPI-DSI`信号。由于`SOC`中`MIPI-DSI`与`OpenLDI`可能是复用在一起的，所以要确认好当前系统的输出信号类型，否则后续调试都是不能进行的。
 
@@ -153,7 +153,7 @@ card0 card1 renderD128 renderD129
 
 通过如上命令即可查看到系统中是否创建了显卡设备。如果创建成功，即可通过`Total Control`或者`scrcpy`等投屏工具，实现从`adb`获取当前显示界面。
 
-#### 2、FPD-Link调试
+### 2、FPD-Link调试
 
 通常，`DS90UB941`与`SOC`之间通过相应的`MIPI-DSI-I2C`相连。首先确保`I2C`是打开的：
 
@@ -172,6 +172,12 @@ card0 card1 renderD128 renderD129
 
 ```shell
 mek_8q:/ # i2cdetect -l
+i2c-1   i2c             i2c-rpmsg-adapter                       I2C Adapter
+i2c-17  i2c             56246000.i2c                            I2C Adapter
+i2c-15  i2c             i2c-rpmsg-adapter                       I2C Adapter
+i2c-18  i2c             58226000.i2c                            I2C Adapter
+i2c-16  i2c             56226000.i2c                            I2C Adapter
+i2c-5   i2c             i2c-rpmsg-adapter                       I2C Adapter
 ```
 
 查看当前`I2C`总线上“挂载”的所有设备：
@@ -190,7 +196,7 @@ Probe chips 0x00-0x7f on bus 16? (Y/n):
 70: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 ```
 
-查看当前的`0x0C`设备是什么设备，可以通过`dummp`其内部寄存器查看：
+想要查看当前的`0x0C`设备是什么设备，可以通过`dummp`其内部寄存器查看：
 
 ```shell
 mek_8q:/ # i2cdump -f -y 16 0x0c
@@ -220,21 +226,7 @@ i2cport=16
 seraddr=0x0c
 ```
 
-然后可以根据芯片手册配置如下：
-
-```shell
-i2cset -fy $i2cport $seraddr 0x01 0x0f b    # Reset DSI/DIGITLE
-i2cset -fy $i2cport $seraddr 0x1E 0x01 b    # Select FPD-Link III Port 0
-i2cset -fy $i2cport $seraddr 0x03 0xBA b    # Enable FPD-Link I2C pass through
-i2cset -fy $i2cport $seraddr 0x5B 0x0B b    # FPD3_TX_MODE=Dual, Align on DE
-i2cset -fy $i2cport $seraddr 0x4F 0x0C b    # DSI Continuous Clock Mode, DSI 4 lanes
-
-ser_dsireg_write 0 0x05 0x14                # Set DSI0 TSKIP_CNT value
-
-i2cset -fy $i2cport $seraddr 0x01 0x00 b    # Release DSI/DIGITLE reset
-```
-
-其中`DSI`寄存器需要间接访问，具体操作的方法如下：
+查看芯片手册可知`DSI`寄存器需要间接访问，具体操作的方法如下：
 
 ```shell
 function ser_dsireg_write(){
@@ -277,54 +269,110 @@ function ser_dsireg_dump(){
 }
 ```
 
+然后可以根据芯片手册配置如下：
+
+```shell
+i2cset -fy $i2cport $seraddr 0x01 0x0f b    # Reset DSI/DIGITLE
+i2cset -fy $i2cport $seraddr 0x1E 0x01 b    # Select FPD-Link III Port 0
+i2cset -fy $i2cport $seraddr 0x03 0xBA b    # Enable FPD-Link I2C pass through
+i2cset -fy $i2cport $seraddr 0x5B 0x0B b    # FPD3_TX_MODE=Dual, Align on DE
+i2cset -fy $i2cport $seraddr 0x4F 0x0C b    # DSI Continuous Clock Mode, DSI 4 lanes
+
+ser_dsireg_write 0 0x05 0x14                # Set DSI0 TSKIP_CNT value
+
+i2cset -fy $i2cport $seraddr 0x01 0x00 b    # Release DSI/DIGITLE reset
+```
+
 通常其他硬件等方面配置正常的话，如上的操作基本上可以实现屏幕的显示。
 
-#### 3、相关问题
+### 3、相关问题
 
-由于`FPD-Link`在车载领域的广泛应用，`TI`已经总结了相关[调试流程][DS90UB941AS-Q1-DSI-Bringup-Guide]，按照如下流程即可实现对`FPD-Link`的快速调试：
+由于`FPD-Link`在车载领域的广泛应用，`TI`已经总结了相关[调试指南][DS90UB941AS-Q1-DSI-Bringup-Guide]，按照如下流程即可实现对`FPD-Link`的快速调试：
 
 ![DS90UB941调试流程][DS90UB941-bringup-flow]
 
-##### 3.1 不能显示图像
+#### 3.1 不能显示图像
 
-首先确认芯片配置的工作模式是否正常。
+*首先确认芯片配置的工作模式是否正常*：
 
+根据实际需求，通过配置`MODE_SEL[1:0]`上下拉电阻来选择`DS90UB941`的工作模式：
 
+![DS90UB941 MODE_SEL配置][DS90UB941-MODE_SEL-configure]
 
-其次确认`FPD-Link`通路是否正常。
+*其次确认`FPD-Link`通路是否正常*：
 
-在没有`MIPI`信号或者不能正常显示的情况下，可以通过使用`PATGEN`的方法来调试：
+在没有`MIPI`信号或者不能正常显示的情况下，可以通过使用`PATGEN`的方法来调试`FPD-Link`通路：
 
 ```shell
-i2cset -fy $i2cport $seraddr 0x56 0x00 b    # Bridge Clocking Mode: 0 DSI Clock, 1 Ext Clock, 2 Int Clock, 3 Ext ref Clock
+i2cset -fy $i2cport $seraddr 0x56 0x00 b    # Bridge Clocking Mode: 0 DSI Clock
+                                            # 1 Ext Clock, 2 Int Clock, 3 Ext ref Clock
 i2cset -fy $i2cport $seraddr 0x65 0x40 b    # PATGEN_EXTCLK: external pixel clock
                                             # PATGEN_TSEL: Patgen uses external video timing
 i2cset -fy $i2cport $seraddr 0x64 0x01 b    # Enable PATGEN/Colorbar/Checkerboard
 ```
 
+可以选择彩条、（国际象棋）棋盘或者其他类型的`PATGEN`。通常来说，配置好`DS90UB941`后，只要`FPD-Link`通路没有问题，就能正常在显示屏幕上显示`PATGEN`图案。一般选择棋盘可以查看显示界面是否抖动，彩条可以查看显示界面颜色是否正常。
 
+*最后确认`MIPI-DSI`信号是否正常*：
 
-最后确认`MIPI-DSI`输入信号是否正常。
+通过官方推荐的`DS90UB941`调试流程，可以采用`PATGEN`的方法验证`MIPI-DSI`信号是否正常：
 
+    1）PATGEN使用内部时序和内部时钟
+    2）PATGEN使用内部时序和外部DSI时钟
+    3）PATGEN使用外部DSI时序和外部DSI时钟
 
+通过如上的步骤，看在哪一步的时候显示不正常了。如果只要是使用`MIPI-DSI`时钟就不能正常工作，说明需要使用相关工具检测`MIPI-DSI`信号。通常`SOC`输出的`MIPI-DSI`信号都能满足芯片的接收，一般情况下只需要确认输出信号不是`OpenLDI`即可。
 
+#### 3.2 图像颜色异常
 
+*画面颜色有偏色异常且画面轻微抖动*：
 
-##### 3.2 图像颜色异常
+通常需要检测`OpenLDI`上相关`LVDS`差分数据`pin`脚的状态，**短路**、**断路**、**对地**等硬件问题都会造成颜色偏差和图像抖动的问题。
 
-画面颜色有偏色异常。
+*画面颜色有灰色异常*：
 
+通常需要检测`OpenLDI`输出数据格式是否与屏幕参数相匹配，`OpenLDI`可以配置为`JEIDA`时序和`VESA`时序：
 
+![DS90UB948 OpenLDI输出格式][DS90UB948-OpenLDI-mapping]
 
-画面颜色多为灰色异常。
+通过设置`DS90UB948`上`MODE_SEL0`上的上下拉电阻，即可调整`MAPSEL`：
 
+![DS90UB948 MODE_SEL0配置][DS90UB948-MODE_SEL0-configure]
 
+#### 3.3 图像上下抖动（Jitter）
 
-##### 3.3 图像上下抖动
+*只有使用`MIPI-DSI`时钟的时候才会抖动*：
 
+此时需要考虑`MIPI-DSI`时钟信号等是否与`DS90UB941`中`DSI`接收器的配置一致，具体可以参考官网的[调试指南][DS90UB941AS-Q1-DSI-Bringup-Guide]文档重新配置相关寄存器：
 
+配置`TSKIP_CNT`：
+$$
+T_{SKIP\_CNT}=Round(65*F_{DSI}-5)
+$$
 
-#### 4、驱动实现
+```shell
+ser_dsireg_write 0 0x05 0x20                # T-SKIP = 0x20/0x04
+```
+
+配置`Sync Width for Event Mode/Burst Mode`：
+
+```shell
+ser_dsireg_write 0 0x20 0x67                # DSI_SYNC_PULSES = 0
+ser_dsireg_write 0 0x30 0x00                # Hsync Pulse Width [9:8]
+ser_dsireg_write 0 0x31 0x20                # Hsync Pulse Width [7:0]
+ser_dsireg_write 0 0x32 0x00                # Vsync Pulse Width [9:8]
+ser_dsireg_write 0 0x33 0x04                # Vsync Pulse Width [7:0]
+```
+
+*任何情况下包括采用内部时钟时序的`PATGEN`都会存在抖动*：
+
+```shell
+i2cset -fy $i2cport $deraddr 0x01 0x01 b    # Reset DS90UB948
+```
+
+目前遇到的这种情况下需要对`DS90UB948`复位一下即可。
+
+### 4、驱动实现
 
 
 ```cpp
@@ -437,7 +485,7 @@ MODULE_LICENSE("GPL");
 
 
 
-### 四、TP功能调试
+## 四、TP功能调试
 
 
 ```cpp
@@ -503,4 +551,7 @@ EXPORT_SYMBOL(ds90ub94x_set_i2c);
 [DS90UB941-application]: /images/ds90ub941_application.png
 [DS90UB941-bringup-flow]: /images/ds90ub941_bringup_flow.png
 [iMX8-MIPI-DSI]: /images/imx8_mipi_dsi_schematic.png
+[DS90UB948-OpenLDI-mapping]: /images/ds90ub948_openldi_mapping.png
+[DS90UB948-MODE_SEL0-configure]: /images/ds90ub948_mode_sel0_configure.png
+[DS90UB941-MODE_SEL-configure]: /images/ds90ub941_mode_sel_configure.png
 
