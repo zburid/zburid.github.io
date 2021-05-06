@@ -13,7 +13,7 @@ mermaid: true
 ## 一. 模块厂商
 
 ### 1. 模块简介
-**BA440**是由[深圳市顾凯信息技术有限公司](http://goodocom.com/)设计研发的一款车规级蓝牙WIFI模块。WIFI方面，支持最高433.3Mbps数据传输率，支持IEEE 802.11 a/b/g/n，支持2.4GHz和5GHz频段。蓝牙方面，支持蓝牙版本BLE4.2+3.0+2.1。接口方面，支持SDIO3.0，支持高达4Mbps串口速率。
+**BA440**是由[深圳市顾凯信息技术有限公司](http://goodocom.com/)设计研发的一款车规级蓝牙WIFI模块。WIFI方面，支持最高433.3Mbps数据传输率，支持IEEE 802.11 a/g/b/n，支持2.4GHz和5GHz频段。蓝牙方面，支持蓝牙版本BLE4.2+3.0+2.1。接口方面，支持SDIO3.0，支持高达4Mbps串口速率。
 
 ![BA440模块图][BA440_module]
 
@@ -1164,7 +1164,34 @@ system/sepolicy/public/domain.te:971:ERROR 'unknown type gocsdk_exec' at token '
 
 ![sepolicy问题原因][cause_of_sepolicy_problem]
 
+即便添加了`allow`权限，`avc`日志中还是会报出相关错误，这些错误的`tcontext`都会带有`c512,c768`的内容。经过检查发现需要在定义`gocsdk`类型时添加`mlstrustedsubject`属性。
+
+```te
+type gocsdk, domain, coredomain, mlstrustedsubject;
+```
+
+但是仍然会发现无法打开声卡文件节点，由于添加权限过程太过漫长，现记录添加打开声卡节点所需要的权限：
+
+```te
+allow gocsdk audio_device:chr_file { open read write ioctl };
+allow gocsdk audio_device:dir { search };
+```
+
+发现需要的权限中有一个`procfsinspector`属性不能找到：
+
+```log
+avc: denied { read } for comm="gocsdk" scontext=u:r:gocsdk:s0 tcontext=u:r:procfsinspector:s0 tclass=file permissive=0
+
+如果直接在`gocsdk.te`中添加，编译时会报无法找到`procfsinspector`属性的错误。在`system/sepolicy/`下面搜索也无法找到，最后发现在文件`packages/services/Car/car_product/sepolicy/private/procfsinspector.te`中添加即可：
+
+```diff
++allow gocsdk procfsinspector:file { read };
+```
+
+
+
 参考资料：
+
 [Android init.rc 添加自定义服务](https://blog.csdn.net/tq501501/article/details/103556837)
 
 [selinux权限问题](https://blog.csdn.net/u011386173/article/details/83339770)
@@ -1172,6 +1199,10 @@ system/sepolicy/public/domain.te:971:ERROR 'unknown type gocsdk_exec' at token '
 [Android 9 SELinux](https://www.jianshu.com/p/e95cd0c17adc)
 
 [SELinux TE规则](https://wenku.baidu.com/view/402b8d8eb7360b4c2f3f646a.html)
+
+[selinux security level引起的denied u:r:untrusted_app:s0:c512,c768问题](https://blog.csdn.net/nuanhua209/article/details/56481783)
+
+[SEAndroid策略](https://blog.csdn.net/l173864930/article/details/17194899)
 
 ## 五. BT 功能测试
 
