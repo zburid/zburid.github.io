@@ -190,7 +190,7 @@ adb shell pm list packages
 adb shell logcat -d > logcat-$(date +%Y-%m-%d_%H-%M-%S).log && adb shell logcat -c
 
 # 开启monkey测试并保存到日志文件中去
-adb shell monkey -p com.hsae.project123.xxxx --pct-syskeys 0 --throttle 500 -v 500000 | tee monkey-$(date +%Y-%m-%d_%H-%M-%S).log
+adb shell monkey -p com.xxxx.project123.xxxx --pct-syskeys 0 --throttle 500 -v 500000 | tee monkey-$(date +%Y-%m-%d_%H-%M-%S).log
 
 # 获取ANR日志
 adb pull /data/anr/traces.txt D:\workspace\xxxx\
@@ -204,6 +204,7 @@ adb pull /data/tombstones D:\workspace\xxxx\
 参考文档：
 
 [Monkey测试][monkey_test_article_url]
+
 [Android自动化压力测试之Monkey Test （三）](https://www.cnblogs.com/Lam7/p/5459153.html)
 
 

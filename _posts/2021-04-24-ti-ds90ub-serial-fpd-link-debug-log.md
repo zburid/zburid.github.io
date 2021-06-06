@@ -327,7 +327,7 @@ i2cset -fy $i2cport $seraddr 0x64 0x01 b    # Enable PATGEN/Colorbar/Checkerboar
 
 *画面颜色有偏色异常且画面轻微抖动*：
 
-通常需要检测`OpenLDI`上相关`LVDS`差分数据`pin`脚的状态，**短路**、**断路**、**对地**等硬件问题都会造成颜色偏差和图像抖动的问题。
+通常需要检测解串器上相关`OpenLDI`差分数据`pin`脚的状态，**短路**、**断路**、**对地**等硬件问题都会造成颜色偏差和图像抖动的问题。
 
 *画面颜色有灰色异常*：
 
@@ -346,9 +346,12 @@ i2cset -fy $i2cport $seraddr 0x64 0x01 b    # Enable PATGEN/Colorbar/Checkerboar
 此时需要考虑`MIPI-DSI`时钟信号等是否与`DS90UB941`中`DSI`接收器的配置一致，具体可以参考官网的[调试指南][DS90UB941AS-Q1-DSI-Bringup-Guide]文档重新配置相关寄存器：
 
 配置`TSKIP_CNT`：
+
+
 $$
 T_{SKIP\_CNT}=Round(65*F_{DSI}-5)
 $$
+
 
 ```shell
 ser_dsireg_write 0 0x05 0x20                # T-SKIP = 0x20/0x04
@@ -371,6 +374,8 @@ i2cset -fy $i2cport $deraddr 0x01 0x01 b    # Reset DS90UB948
 ```
 
 目前遇到的这种情况下需要对`DS90UB948`复位一下即可。
+
+
 
 ### 4、驱动实现
 
@@ -400,7 +405,7 @@ static void ds90ub94x_write_reg(struct i2c_client *client, u8 reg, u8 data)
 	struct i2c_msg msg;
 
 	b[0] = reg;                 /* 寄存器首地址 */
-	b[1] = data;                /* 要写入的数据拷 */
+	b[1] = data;                /* 要写入的数据 */
 
 	msg.addr = client->addr;    /* i2c地址 */
 	msg.flags = 0;              /* 标记为写数据 */

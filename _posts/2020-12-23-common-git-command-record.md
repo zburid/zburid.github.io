@@ -59,6 +59,15 @@ $ git reset <hash code> --hard  # 恢复本地到某个版本
 $ git push -f                   # 强制远程仓库恢复到本地当前版本
 ```
 
+#### 8. 配置默认用户名和邮箱
+
+```bash
+$ git config --global user.name "XXXXX"
+$ git config --global user.email "XXXXX@YYY.com"
+```
+
+
+
 ## 二、远程仓库 `git remote`
 
 ```bash
