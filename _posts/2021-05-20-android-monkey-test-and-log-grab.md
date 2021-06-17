@@ -159,7 +159,7 @@ usage: monkey [-p ALLOWED_PACKAGE [-p ALLOWED_PACKAGE] ...]
               COUNT
 ```
 
-![img](https://pic3.zhimg.com/80/v2-2c313382d151d20da68679a74d2f360a_720w.jpg)
+![monkey-common-params-1][monkey-common-params-1]
 
 ```shell
 $ adb shell monkey -p com.xxx.myapp --throttle 100 --ignore-crashes --ignore-timeouts --ignore-security-exceptions --ignore-native-crashes --monitor-native-crashes -v -v -v 1000000
@@ -175,9 +175,9 @@ $ adb shell monkey -p com.xxx.myapp --throttle 100 --ignore-crashes --ignore-tim
  **-v** 每个-v都将增加反馈信息的级别。共3个级别，因此，-v -v -v可以提供最详细的设置信息。
 **1000000** 这里是指点击的次数
 
-![img](https://images2015.cnblogs.com/blog/911086/201605/911086-20160504181926247-558705775.png)
+![monkey-common-params-2](/images/monkey-common-params-2.png)
 
-![img](https://images2015.cnblogs.com/blog/911086/201605/911086-20160504182523544-2095740827.png)
+![monkey-common-params-3](/images/monkey-common-params-3.png)
 
 
 
@@ -215,6 +215,9 @@ adb pull /data/tombstones D:\workspace\xxxx\
 [adb_user_guide]: https://developer.android.google.cn/studio/command-line/adb
 [ADB_Driver_Installer_Download_URL]: https://dl.adbdriver.com/upload/ADBDriverInstaller.exe
 [platform-tools-url]: https://developer.android.google.cn/studio/releases/platform-tools
-[adb_driver_installer_interface]: /images/adb_driver_installer_interface.png
 [monkey_test_article_url]: https://www.jianshu.com/p/f332c1b01db7
+[adb_driver_installer_interface]: /images/adb_driver_installer_interface.png
+[monkey-common-params-1]: /images/monkey-common-params-1.jpg
+[monkey-common-params-2]: /images/monkey-common-params-2.png
+[monkey-common-params-3]: /images/monkey-common-params-3.png
 

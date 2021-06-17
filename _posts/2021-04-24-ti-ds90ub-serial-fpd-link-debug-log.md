@@ -13,7 +13,7 @@ mermaid: true
 
 ## 一、`FPD-Link`简介
 
-[**`FPD-Link`**][FPD-Link-overview]全称为`Flat panel display link`，目前版本为`FPD-Link III`，其旨要在于通过更少的导线在汽车系统中快速传输高分辨率、未压缩的数据，常被应用于汽车领域用于点对点传输视频数据。该接口可通过低成本电缆如双绞线（`STP`）或同轴电缆（`COAX`）传输**数字高清视频**和**双向控制信道**。
+[**FPD-Link**][FPD-Link-overview]全称为`Flat panel display link`，目前版本为`FPD-Link III`，其旨要在于通过更少的导线在汽车系统中快速传输高分辨率、未压缩的数据，常被应用于汽车领域用于点对点传输视频数据。该接口可通过低成本电缆如双绞线（`STP`）或同轴电缆（`COAX`）传输**数字高清视频**和**双向控制信道**。
 
 借助 `FPD-Link` 串行器（`Serializer`）和解串器（`Deserializer`）可以为汽车系统中的各种视频接口（包括用于高级驾驶辅助系统 `ADAS`的摄像头`Camera`和信息娱乐系统`IVI`显示屏`Display`）优化高分辨率信号的设计和传输。
 
@@ -29,7 +29,7 @@ mermaid: true
 
 ### 1、MIPI-DSI输出
 
-首先需要实现`SOC`输出`MIPI-DSI`信号。由于`SOC`中`MIPI-DSI`与`OpenLDI`可能是复用在一起的，所以要确认好当前系统的输出信号类型，否则后续调试都是不能进行的。
+首先需要实现`SOC`输出`MIPI-DSI`信号。由于`SOC`中`MIPI-DSI`与`OpenLDI`的端口可能是复用在一起的，所以要确认好当前系统的输出信号类型，否则后续调试都是不能进行的。
 
 ![iMX8 MIPI DSI原理图][iMX8-MIPI-DSI]
 
@@ -294,13 +294,13 @@ i2cset -fy $i2cport $seraddr 0x01 0x00 b    # Release DSI/DIGITLE reset
 
 #### 3.1 不能显示图像
 
-*首先确认芯片配置的工作模式是否正常*：
+* 首先确认芯片配置的工作模式是否正常：
 
 根据实际需求，通过配置`MODE_SEL[1:0]`上下拉电阻来选择`DS90UB941`的工作模式：
 
 ![DS90UB941 MODE_SEL配置][DS90UB941-MODE_SEL-configure]
 
-*其次确认`FPD-Link`通路是否正常*：
+* 其次确认`FPD-Link`通路是否正常：
 
 在没有`MIPI`信号或者不能正常显示的情况下，可以通过使用`PATGEN`的方法来调试`FPD-Link`通路：
 
@@ -314,7 +314,7 @@ i2cset -fy $i2cport $seraddr 0x64 0x01 b    # Enable PATGEN/Colorbar/Checkerboar
 
 可以选择彩条、（国际象棋）棋盘或者其他类型的`PATGEN`。通常来说，配置好`DS90UB941`后，只要`FPD-Link`通路没有问题，就能正常在显示屏幕上显示`PATGEN`图案。一般选择棋盘可以查看显示界面是否抖动，彩条可以查看显示界面颜色是否正常。
 
-*最后确认`MIPI-DSI`信号是否正常*：
+* 最后确认`MIPI-DSI`信号是否正常：
 
 通过官方推荐的`DS90UB941`调试流程，可以采用`PATGEN`的方法验证`MIPI-DSI`信号是否正常：
 
@@ -326,11 +326,11 @@ i2cset -fy $i2cport $seraddr 0x64 0x01 b    # Enable PATGEN/Colorbar/Checkerboar
 
 #### 3.2 图像颜色异常
 
-*画面颜色有偏色异常且画面轻微抖动*：
+* 画面颜色有偏色异常且画面轻微抖动：
 
 通常需要检测解串器上相关`OpenLDI`差分数据`pin`脚的状态，**短路**、**断路**、**对地**等硬件问题都会造成颜色偏差和图像抖动的问题。
 
-*画面颜色有灰色异常*：
+* 画面颜色有灰色异常：
 
 通常需要检测`OpenLDI`输出数据格式是否与屏幕参数相匹配，`OpenLDI`可以配置为`JEIDA`时序和`VESA`时序：
 
@@ -342,7 +342,7 @@ i2cset -fy $i2cport $seraddr 0x64 0x01 b    # Enable PATGEN/Colorbar/Checkerboar
 
 #### 3.3 图像上下抖动（Jitter）
 
-*只有使用`MIPI-DSI`时钟的时候才会抖动*：
+* 只有使用`MIPI-DSI`时钟的时候才会抖动：
 
 此时需要考虑`MIPI-DSI`时钟信号等是否与`DS90UB941`中`DSI`接收器的配置一致，具体可以参考官网的[调试指南][DS90UB941AS-Q1-DSI-Bringup-Guide]文档重新配置相关寄存器：
 
@@ -368,7 +368,7 @@ ser_dsireg_write 0 0x32 0x00                # Vsync Pulse Width [9:8]
 ser_dsireg_write 0 0x33 0x04                # Vsync Pulse Width [7:0]
 ```
 
-*任何情况下包括采用内部时钟时序的`PATGEN`都会存在抖动*：
+* 任何情况下包括采用内部时钟时序的`PATGEN`都会存在抖动：
 
 ```shell
 i2cset -fy $i2cport $deraddr 0x01 0x01 b    # Reset DS90UB948
@@ -493,6 +493,67 @@ MODULE_LICENSE("GPL");
 
 ## 四、TP功能调试
 
+采用`Goodix`（[汇顶科技][goodix-official-website]）的`GT9XX`系列触摸屏，通过`FPD-Link`传输`I2C`和`GPIO/IRQ`信号，来获取触摸信息并控制`LCD`背光：
+
+
+
+### 1、TP调试
+
+#### 1.1 FPD-Link通路
+
+
+
+
+
+
+
+#### 1.2 功能调试
+
+
+
+
+
+
+
+### 2、驱动实现
+
+#### 2.1 获取驱动
+
+```shell
+$ git clone https://github.com/goodix/gt9xx_driver_android
+```
+
+获取`github`上最新的驱动程序，并将其放置到`vendor/nxp-opensource/kernel_imx/drivers/input/touchscreen/`下，修改如下：
+
+```diff
+diff --git vendor/nxp-opensource/kernel_imx/arch/arm64/configs/imx_v8_android_defconfig
+ CONFIG_INPUT_TOUCHSCREEN=y
+-CONFIG_TOUCHSCREEN_ATMEL_MXT=m
+-CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C=m
++CONFIG_TOUCHSCREEN_ATMEL_MXT=n
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C=n
++CONFIG_TOUCHSCREEN_GT9XX=y
+ CONFIG_INPUT_MISC=y
+ CONFIG_INPUT_UINPUT=y
+
+diff --git vendor/nxp-opensource/kernel_imx/drivers/input/touchscreen/Kconfig
+ source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
++source "drivers/input/touchscreen/gt9xx/Kconfig"
+ endif
+ source "drivers/input/touchscreen/focaltech_touch/Kconfig"
+
+diff --git vendor/nxp-opensource/kernel_imx/drivers/input/touchscreen/Makefile
+ obj-$(CONFIG_TOUCHSCREEN_RASPBERRYPI_FW)    += raspberrypi-ts.o
+ obj-$(CONFIG_TOUCHSCREEN_IQS5XX)    += iqs5xx.o
++obj-$(CONFIG_TOUCHSCREEN_GT9XX)    +=  gt9xx/
+```
+
+
+
+#### 2.2 适配驱动
+
+
+
 
 ```cpp
 /* set remote gpio0 output */
@@ -542,6 +603,10 @@ EXPORT_SYMBOL(ds90ub94x_set_i2c);
 ```
 
 
+## 五、副屏调试
+
+
+
 
 参考文档：
 
@@ -561,3 +626,4 @@ EXPORT_SYMBOL(ds90ub94x_set_i2c);
 [DS90UB948-MODE_SEL0-configure]: /images/ds90ub948_mode_sel0_configure.png
 [DS90UB941-MODE_SEL-configure]: /images/ds90ub941_mode_sel_configure.png
 
+[goodix-official-website]: https://www.goodix.com/
