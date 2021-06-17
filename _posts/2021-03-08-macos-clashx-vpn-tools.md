@@ -7,6 +7,7 @@ description: "MacOS下使用工具ClashX科学上网"
 author: zburid
 tags:   MacOS ClashX VPN
 typora-root-url: ..
+show:   true
 ---
 
 ### 1、安装ClashX软件

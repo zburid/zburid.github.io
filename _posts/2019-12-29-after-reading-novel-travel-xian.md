@@ -7,6 +7,7 @@ description: "《流浪仙人》小说的一些读后感和笔记"
 author: zburid
 tags:   流浪仙人 小说 宗教
 typora-root-url: ..
+show:   true
 ---
 
 ### 一、简介

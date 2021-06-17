@@ -7,6 +7,7 @@ description: "使用神经网络模拟运算电路，采用Pytorch实现"
 author: zburid
 tags:   pytorch 神经网络 深度学习 运算电路
 typora-root-url: ..
+show:   true
 ---
 ### 一、简述
 想要实现一个由神经网络来模拟的加法器（或乘法器或除法器）模型~~（看看概率模型如何实现逻辑运算😂）~~。
@@ -63,7 +64,7 @@ class myDataset(Dataset):
             calopt = lambda a, b: a * b
         else:
             raise ValueError("Error in ctype:", ctype)
-        
+
         if dtype == 0:
             megopt = lambda a, b: a + b
         elif dtype == 1:
@@ -75,7 +76,7 @@ class myDataset(Dataset):
 
         num2bcd = lambda x, l: [1 & (x >> i) for i in range(l)]
         maxnum = (1 << bitlen) - 1
-        
+
         if padding > 0:
             bitlen += int(padding)
 

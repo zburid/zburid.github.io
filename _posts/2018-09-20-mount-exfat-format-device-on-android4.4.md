@@ -7,6 +7,7 @@ description: "Android 4.4 挂载exFAT格式文件系统的记录"
 author: zburid
 tags:   Android exFAT 文件系统
 typora-root-url: ..
+show:   true
 mermaid: true
 ---
 
@@ -34,9 +35,9 @@ $ mv exfat /path/to/sdk/external/
 // Exfat.h
 #ifndef _EXFAT_H
 #define _EXFAT_H
- 
+
 #include <unistd.h>
- 
+
 class Exfat {
 public:
     static int check(const char *fsPath);
@@ -45,7 +46,7 @@ public:
                        int ownerUid, int ownerGid, int permMask,
                        bool createLost);
 };
- 
+
 #endif
 ```
 
@@ -60,35 +61,35 @@ public:
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
- 
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/mount.h>
 #include <sys/wait.h>
- 
+
 #include <linux/kdev_t.h>
- 
+
 #define LOG_TAG "Vold"
- 
+
 #include <cutils/log.h>
 #include <cutils/properties.h>
- 
+
 #include <logwrap/logwrap.h>
 #include "Exfat.h"
 #include "VoldUtil.h"
- 
+
 static char EXFAT_FIX_PATH[] = "/system/bin/fsck.exfat";
 static char EXFAT_MOUNT_PATH[] = "/system/bin/mount.exfat";
- 
+
 int Exfat::check(const char *fsPath) {
- 
+
     if (access(EXFAT_FIX_PATH, X_OK)) {
         SLOGW("Skipping fs checks\n");
         return 0;
     }
- 
+
     int rc = 0;
     int status;
     const char *args[4];
@@ -96,7 +97,7 @@ int Exfat::check(const char *fsPath) {
     args[0] = EXFAT_FIX_PATH;
     args[1] = fsPath;
     args[2] = NULL;
- 
+
     rc = android_fork_execvp(ARRAY_SIZE(args), (char **)args, &status, false,
            true);
     if (rc) {
@@ -107,23 +108,23 @@ int Exfat::check(const char *fsPath) {
         errno = ENODATA;
         return -1;
     }
- 
+
         status = WEXITSTATUS(status);
- 
+
         switch(status) {
         case 0:
             SLOGI("ExFat filesystem check completed OK");
             break;
- 
+
         default:
             SLOGE("Filesystem check failed (unknown exit code %d)", status);
             errno = EIO;
             return -1;
     }
- 
+
     return 0;
 }
- 
+
 int Exfat::doMount(const char *fsPath, const char *mountPoint,
                  bool ro, bool remount, bool executable,
                  int ownerUid, int ownerGid, int permMask, bool createLost) {
@@ -131,7 +132,7 @@ int Exfat::doMount(const char *fsPath, const char *mountPoint,
     int status;
     char mountData[255];
     const char *args[6];
- 
+
     /*
      * Note: This is a temporary hack. If the sampling profiler is enabled,
      * we make the SD card world-writable so any process can write snapshots.
@@ -145,28 +146,28 @@ int Exfat::doMount(const char *fsPath, const char *mountPoint,
             " 'persist.sampling_profiler' system property is set to '1'.");
         permMask = 0;
     }
- 
+
     sprintf(mountData,
             "utf8,uid=%d,gid=%d,fmask=%o,dmask=%o,"
             "shortname=mixed,nodev,nosuid,dirsync",
             ownerUid, ownerGid, permMask, permMask);
- 
+
     if (!executable)
         strcat(mountData, ",noexec");
     if (ro)
         strcat(mountData, ",ro");
     if (remount)
         strcat(mountData, ",remount");
- 
+
     SLOGD("Mounting ntfs with options:%s\n", mountData);
- 
+
     args[0] = EXFAT_MOUNT_PATH;
     args[1] = "-o";
     args[2] = mountData;
     args[3] = fsPath;
     args[4] = mountPoint;
     args[5] = NULL;
- 
+
     rc = android_fork_execvp(ARRAY_SIZE(args), (char **)args, &status, false,
            true);
     if (rc && errno == EROFS) {
@@ -178,7 +179,7 @@ int Exfat::doMount(const char *fsPath, const char *mountPoint,
     if (!WIFEXITED(status)) {
         return rc;
     }
- 
+
     if (rc == 0 && createLost) {
         char *lost_path;
         asprintf(&lost_path, "%s/LOST.DIR", mountPoint);
@@ -193,7 +194,7 @@ int Exfat::doMount(const char *fsPath, const char *mountPoint,
         }
         free(lost_path);
     }
- 
+
     return rc;
 }
 ```
@@ -255,15 +256,15 @@ index 664991afe0..d6070dd2d1 100755
 +++ b/kernel/fs/Kconfig
 @@ -86,9 +86,10 @@ endmenu
  endif # BLOCK
- 
+
  if BLOCK
 -menu "DOS/FAT/NT Filesystems"
 +menu "DOS/FAT/ExFAT/NT Filesystems"
- 
+
  source "fs/fat/Kconfig"
 +source "fs/exfat/Kconfig"
  source "fs/ntfs/Kconfig"
- 
+
  endmenu
 diff --git a/kernel/fs/Makefile b/kernel/fs/Makefile
 index da0bbb456d..d355b75811 100755
@@ -291,18 +292,18 @@ index 9f8be6ccd7..371cbc061e 100644
  #include <sys/wait.h>
 +#include <linux/fs.h>
 +#include <sys/ioctl.h>
- 
+
  #include <linux/kdev_t.h>
- 
+
 @@ -26,6 +28,8 @@
  #include "Exfat.h"
  #include "VoldUtil.h"
- 
+
 +#define USE_NOFUSE_EXFAT
 +
  static char EXFAT_FIX_PATH[] = "/system/bin/fsck.exfat";
  static char EXFAT_MOUNT_PATH[] = "/system/bin/mount.exfat";
- 
+
 @@ -75,8 +79,44 @@ int Exfat::doMount(const char *fsPath, const char *mountPoint,
                   bool ro, bool remount, bool executable,
                   int ownerUid, int ownerGid, int permMask, bool createLost) {
@@ -314,11 +315,11 @@ index 9f8be6ccd7..371cbc061e 100644
 +    unsigned long flags;
 +
 +    flags = MS_NODEV | MS_NOSUID | MS_DIRSYNC;
-+    
++
 +    flags |= (executable ? 0 : MS_NOEXEC);
 +    flags |= (ro ? MS_RDONLY : 0);
 +    flags |= (remount ? MS_REMOUNT : 0);
-+    
++
 +    /*
 +     * Note: This is a temporary hack. If the sampling profiler is enabled,
 +     * we make the SD card world-writable so any process can write snapshots.
@@ -347,7 +348,7 @@ index 9f8be6ccd7..371cbc061e 100644
 +#else
 +    int status;
      const char *args[6];
- 
+
      /*
 @@ -125,7 +165,7 @@ int Exfat::doMount(const char *fsPath, const char *mountPoint,
      if (!WIFEXITED(status)) {

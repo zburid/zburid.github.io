@@ -7,6 +7,7 @@ description: "Atmel触摸屏按键功能和反馈音功能添加记录"
 author: zburid
 tags:   Android Atmel TP 按键
 typora-root-url: ..
+show:   true
 ---
 
 需要在Atmel触摸屏上实现4个触摸按键，分别是：BACK、HOME、Favorite、HDMI这4个。其中BACK与HOME需要关联到Android系统上的返回与HOME功能。

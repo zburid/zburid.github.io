@@ -6,6 +6,7 @@ categories: travel
 description: "辛丑仲春某某居士游山玩水并吟诗作赋"
 author: zburid
 tags:   旅行 诗
+show:   false
 typora-root-url: ..
 ---
 

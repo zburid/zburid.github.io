@@ -7,6 +7,7 @@ description: "一个简易的使用Jekyll建站并部署到Github上的记录"
 author: zburid
 tags:   Jekyll 建站 Github
 typora-root-url: ..
+show:   true
 ---
 
 ### 一、使用`Jekyll`搭建网站
@@ -87,7 +88,7 @@ var converter = new showdown.Converter({
     tables: true,
     strikethrough: true,
     literalMidWordUnderscores: true
-}); 
+});
 article_html = converter.makeHtml(data);
 ```
 

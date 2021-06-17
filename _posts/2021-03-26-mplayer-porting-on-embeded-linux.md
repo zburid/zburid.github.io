@@ -7,6 +7,7 @@ description: "MPlayer播放器源码移植到嵌入式平台"
 author: zburid
 tags:   MPlayer Linux 嵌入式
 typora-root-url: ..
+show:   true
 ---
 
 [MPlayer][mplayer-website]是一款开源多媒体播放器，以GNU通用公共许可证发布。它资源占用率低，无论是音频还是视频方面，支持的格式相当全面，支持的输出设备也很多，可以在各种主流操作系统中使用。

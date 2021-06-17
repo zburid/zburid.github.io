@@ -7,6 +7,7 @@ description: "在Android C代码中添加logcat日志打印"
 author: zburid
 tags:   Android C logcat
 typora-root-url: ..
+show:   true
 ---
 
 ### 1. Android.bp

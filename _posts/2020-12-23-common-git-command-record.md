@@ -7,6 +7,7 @@ description: "日常中常用GIT命令的记录"
 author: zburid
 tags:   Git
 typora-root-url: ..
+show:   true
 ---
 
 ## 一、常用案例

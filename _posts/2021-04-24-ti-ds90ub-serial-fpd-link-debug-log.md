@@ -7,6 +7,7 @@ description: "FPD-Link芯片DS90UB941/8及其相关功能的调试记录"
 author: zburid
 tags:   FPD-Link MIPI TI TP Goodix iMX8
 typora-root-url: ..
+show:   true
 mermaid: true
 ---
 
@@ -41,7 +42,7 @@ mermaid: true
 -	status = "okay";
 +	status = "disabled";
  };
- 
+
  &ldb1 {
 -	status = "okay";
 +	status = "disabled";
@@ -72,7 +73,7 @@ mermaid: true
 +			};
 +		};
 +	};
-+ 
++
   	ports {
   		port@1 {
   			reg = <1>;
@@ -419,7 +420,7 @@ static void ds90ub94x_write_reg(struct i2c_client *client, u8 reg, u8 data)
 
 static void ds90ub94x_display_setting(void)
 {
-	ds90ub94x_write_reg(g_ds90ub94x->ds90ub941_i2c, 0x01, 0x0f); /* Reset DSI/DIGITLE */	
+	ds90ub94x_write_reg(g_ds90ub94x->ds90ub941_i2c, 0x01, 0x0f); /* Reset DSI/DIGITLE */
 	ds90ub94x_write_reg(g_ds90ub94x->ds90ub941_i2c, 0x03, 0xBA); /* Enable FPD-Link I2C pass through */
 	ds90ub94x_write_reg(g_ds90ub94x->ds90ub941_i2c, 0x1E, 0x01); /* Select FPD-Link III Port 0 */
 	ds90ub94x_write_reg(g_ds90ub94x->ds90ub941_i2c, 0x5B, 0x0B); /* FPD3_TX_MODE=Dual, Align on DE */

@@ -7,6 +7,7 @@ description: "Android4.4平台下HUB与读卡器芯片USB2660调试记录"
 author: zburid
 tags:   HUB 读卡器 Android USB2660
 typora-root-url: ..
+show:   true
 ---
 
 ### 一、芯片USB2660简介
@@ -216,13 +217,13 @@ index 5e0bf01ee4..ebd80f57ee 100755
  #include <string.h>
  #include <errno.h>
 +#include <fcntl.h>
- 
+
  #include <linux/kdev_t.h>
- 
+
 @@ -72,6 +73,35 @@ DirectVolume::~DirectVolume() {
      delete mPaths;
  }
- 
+
 +void *threadMonitor(void *obj)
 +{
 +	int dosfs;
@@ -263,7 +264,7 @@ index 5e0bf01ee4..ebd80f57ee 100755
 @@ -193,6 +223,17 @@ void DirectVolume::handleDiskAdded(const char *devpath, NetlinkEvent *evt) {
          mDiskNumParts = 1;
      }
- 
+
 +	const char *p;
 +	p = evt->findParam("DEVNAME");
 +	if (p && !strcmp(p, "sdb")) {
@@ -271,10 +272,10 @@ index 5e0bf01ee4..ebd80f57ee 100755
 +		mThreadRun = 1;
 +		snprintf(mDevName,
 +			 sizeof(mDevName), "/dev/block/vold/%d:%d",
-+			 mDiskMajor, mDiskMinor);		
++			 mDiskMajor, mDiskMinor);
 +		pthread_create(&mThread, NULL, threadMonitor, this);
 +	}
-+	
++
  #ifdef SUPPORT_LOGICAL_PARTITION
      mPendingPartMap = mDiskNumParts;
  #else
@@ -288,7 +289,7 @@ index 5e0bf01ee4..ebd80f57ee 100755
      char msg[255];
      bool enabled;
 +	const char *p;
- 
+
      setRemoveState(1);
 -
 +	p = evt->findParam("DEVNAME");
@@ -336,12 +337,12 @@ index 69163dc238..5640f0232a 100755
  #include <unistd.h>
  #include <ctype.h>
 +#include <fcntl.h>
- 
+
  #include <fs_mgr.h>
  #include "mtdutils/mtdutils.h"
 @@ -38,6 +39,45 @@ static struct fstab *fstab = NULL;
  extern struct selabel_handle *sehandle;
- 
+
  bool boot_mode_is_sdmmc = false;
 +
 +#if 1
@@ -396,7 +397,7 @@ index 69163dc238..5640f0232a 100755
  		    update_mmcblk_dev_name(v);
 +
 +    rescan_usb_blkname(v);
- 
+
      mkdir(v->mount_point, 0755);  // in case it doesn't already exist
 ```
 

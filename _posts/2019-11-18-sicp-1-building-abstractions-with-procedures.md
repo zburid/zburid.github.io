@@ -7,6 +7,7 @@ description: "SICP笔记：第一章、构造过程抽象"
 author: zburid
 tags:   SICP Lisp
 typora-root-url: ..
+show:   true
 ---
 
 ### 一、程序设计的基本元素

@@ -7,6 +7,7 @@ description: "Android4.4下双TP双屏异显触控实现记录"
 author: zburid
 tags:   TP Android
 typora-root-url: ..
+show:   true
 ---
 
 #### 1、添加多个触摸屏驱动

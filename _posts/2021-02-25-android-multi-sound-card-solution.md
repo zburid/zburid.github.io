@@ -7,6 +7,7 @@ description: "Android多声卡解决方案实现及其相关知识点的记录"
 author: zburid
 tags:   Android 多声卡 音频 SPDIF I2S ALSA iMX8
 typora-root-url: ..
+show:   true
 mermaid: true
 ---
 
@@ -883,11 +884,11 @@ diff --git frameworks/av/services/audiopolicy/engine/common/src/EngineDefaultCon
 
 @@ -40,9 +40,6 @@ const engineConfig::ProductStrategies gOrderedStrategies = {
           {"ring", AUDIO_STREAM_RING, "AUDIO_STREAM_RING",
-           {{AUDIO_CONTENT_TYPE_UNKNOWN, AUDIO_USAGE_NOTIFICATION_TELEPHONY_RINGTONE,
-             AUDIO_SOURCE_DEFAULT, 0, ""}}
+           { {AUDIO_CONTENT_TYPE_UNKNOWN, AUDIO_USAGE_NOTIFICATION_TELEPHONY_RINGTONE,
+             AUDIO_SOURCE_DEFAULT, 0, ""} }
 -         },
 -         {"alarm", AUDIO_STREAM_ALARM, "AUDIO_STREAM_ALARM",
--          {{AUDIO_CONTENT_TYPE_UNKNOWN, AUDIO_USAGE_ALARM, AUDIO_SOURCE_DEFAULT, 0, ""}},
+-          { {AUDIO_CONTENT_TYPE_UNKNOWN, AUDIO_USAGE_ALARM, AUDIO_SOURCE_DEFAULT, 0, ""} },
           }
       },
      },
@@ -901,14 +902,14 @@ diff --git frameworks/av/services/audiopolicy/engine/common/src/EngineDefaultCon
           {"", AUDIO_STREAM_NOTIFICATION, "AUDIO_STREAM_NOTIFICATION",
            {
 @@ -128,6 +125,13 @@ const engineConfig::ProductStrategies gOrderedStrategies = {
-           {{AUDIO_CONTENT_TYPE_UNKNOWN, AUDIO_USAGE_UNKNOWN, AUDIO_SOURCE_DEFAULT, 0, ""}}
+           { {AUDIO_CONTENT_TYPE_UNKNOWN, AUDIO_USAGE_UNKNOWN, AUDIO_SOURCE_DEFAULT, 0, ""} }
           }
       },
 +    },
 +    {"STRATEGY_SUB",
 +     {
 +         {"alarm", AUDIO_STREAM_ALARM, "AUDIO_STREAM_ALARM",
-+          {{AUDIO_CONTENT_TYPE_UNKNOWN, AUDIO_USAGE_ALARM, AUDIO_SOURCE_DEFAULT, 0, ""}},
++          { {AUDIO_CONTENT_TYPE_UNKNOWN, AUDIO_USAGE_ALARM, AUDIO_SOURCE_DEFAULT, 0, ""} },
 +         }
 +     },
      }
@@ -1098,12 +1099,12 @@ index 0bef8ef..532f035 100644
 --- a/vendor/nxp-opensource/imx/alsa/audio_card_config_parse.cpp
 +++ b/vendor/nxp-opensource/imx/alsa/audio_card_config_parse.cpp
 @@ -28,7 +28,7 @@
- 
+
  #include "audio_card_config_parse.h"
- 
+
 -#define LOG_TAG "audio_hw_primary"
 +#define LOG_TAG "audio_card_config_parse"
- 
+
  static const char* const g_kAudioConfigPath = "/vendor/etc/configs/audio";
  static const char* const g_key_driver_name = "driver_name";
 @@ -66,6 +66,8 @@ static const struct audio_devcie_map g_out_device_map[] = {
@@ -1113,7 +1114,7 @@ index 0bef8ef..532f035 100644
 +    {"anlg_dock_headset", AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET},
 +    {"dgtl_dock_headset", AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET},
  };
- 
+
  static const struct audio_devcie_map g_in_device_map[] = {
 ```
 

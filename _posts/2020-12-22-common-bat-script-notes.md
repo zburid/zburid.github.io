@@ -7,6 +7,7 @@ description: "BAT批处理脚本常用功能的记录"
 author: zburid
 tags:   BAT Windows CMD
 typora-root-url: ..
+show:   true
 ---
 
 ### 1. 判断参数是否为数字，如果不是数字则执行XXX

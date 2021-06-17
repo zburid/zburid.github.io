@@ -7,6 +7,7 @@ description: "修改默认的Android串号为EMMC串号的组合"
 author: zburid
 tags:   Android EMMC 嵌入式 串号
 typora-root-url: ..
+show:   true
 ---
 
 ### 一、为什么需要串号
@@ -46,7 +47,7 @@ static void import_kernel_nv(char *name, int for_emulator)
     if (for_emulator) {
         /* in the emulator, export any kernel option with the
          * ro.kernel. prefix */
-        char buff[PROP_NAME_MAX]; 
+        char buff[PROP_NAME_MAX];
         int len = snprintf( buff, sizeof(buff), "ro.kernel.%s", name );
 
         if (len < (int)sizeof(buff))

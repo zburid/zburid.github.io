@@ -7,6 +7,7 @@ description: "Android自动化压力测试与日志获取相关记录"
 author: zburid
 tags:   Android monkey adb 测试 日志
 typora-root-url: ..
+show:   true
 mermaid: true
 ---
 
