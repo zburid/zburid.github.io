@@ -10,3 +10,4 @@ Thumbs.db
 *.bak
 *.bf
 *.sh
+*.DS_Store

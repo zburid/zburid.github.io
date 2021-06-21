@@ -11,7 +11,7 @@ show:   true
 mermaid: true
 ---
 
-## 一、`FPD-Link`简介
+## 一、FPD-Link简介
 
 [**FPD-Link**][FPD-Link-overview]全称为`Flat panel display link`，目前版本为`FPD-Link III`，其旨要在于通过更少的导线在汽车系统中快速传输高分辨率、未压缩的数据，常被应用于汽车领域用于点对点传输视频数据。该接口可通过低成本电缆如双绞线（`STP`）或同轴电缆（`COAX`）传输**数字高清视频**和**双向控制信道**。
 
@@ -324,11 +324,13 @@ i2cset -fy $i2cport $seraddr 0x64 0x01 b    # Enable PATGEN/Colorbar/Checkerboar
 
 通过如上的步骤，看在哪一步的时候显示不正常了。如果只要是使用`MIPI-DSI`时钟就不能正常工作，说明需要使用相关工具检测`MIPI-DSI`信号。通常`SOC`输出的`MIPI-DSI`信号都能满足芯片的接收，一般情况下只需要确认输出信号不是`OpenLDI`即可。
 
+如果以上各项操作均未发现问题，请检查**`LVDS`排线线序**是否正常。
+
 #### 3.2 图像颜色异常
 
 * 画面颜色有偏色异常且画面轻微抖动：
 
-通常需要检测解串器上相关`OpenLDI`差分数据`pin`脚的状态，**短路**、**断路**、**对地**等硬件问题都会造成颜色偏差和图像抖动的问题。
+通常需要检测解串器上相关`OpenLDI`差分数据`PIN`脚的状态，**短路**、**断路**、**对地**等硬件问题都会造成颜色偏差和图像抖动的问题。
 
 * 画面颜色有灰色异常：
 
@@ -374,7 +376,7 @@ ser_dsireg_write 0 0x33 0x04                # Vsync Pulse Width [7:0]
 i2cset -fy $i2cport $deraddr 0x01 0x01 b    # Reset DS90UB948
 ```
 
-目前遇到的这种情况下需要对`DS90UB948`复位一下即可。
+目前遇到的这种情况下需要在一定时间内对`DS90UB948`复位一下即可。
 
 
 
