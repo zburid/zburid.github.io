@@ -1039,7 +1039,7 @@ mek_8q:/ # echo "AAAAAAAAAAAAAAABBBBBB" > /dev/ttyLP1   # 向串口写入数据
 
 ![供应商需要的头文件][supplier_needed_header_files]
 
-![供应商需要的苦文件][supplier_needed_library_files]
+![供应商需要的库文件][supplier_needed_library_files]
 
 需要注意到`tinyalsa`的版本是否匹配，如果头文件不匹配的话，可能会造成蓝牙服务打开PCM设备失败的情况。
 
@@ -1182,6 +1182,7 @@ allow gocsdk audio_device:dir { search };
 
 ```log
 avc: denied { read } for comm="gocsdk" scontext=u:r:gocsdk:s0 tcontext=u:r:procfsinspector:s0 tclass=file permissive=0
+```
 
 如果直接在`gocsdk.te`中添加，编译时会报无法找到`procfsinspector`属性的错误。在`system/sepolicy/`下面搜索也无法找到，最后发现在文件`packages/services/Car/car_product/sepolicy/private/procfsinspector.te`中添加即可：
 

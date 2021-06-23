@@ -497,6 +497,8 @@ MODULE_LICENSE("GPL");
 
 采用`Goodix`（[汇顶科技][goodix-official-website]）的`GT9XX`系列触摸屏，通过`FPD-Link`传输`I2C`和`GPIO/IRQ`信号，来获取触摸信息并控制`LCD`背光：
 
+![DS90UB948 GPIO接口][DS90UB948-GPIO-INTERFACE]
+
 
 
 ### 1、TP调试
@@ -629,3 +631,5 @@ EXPORT_SYMBOL(ds90ub94x_set_i2c);
 [DS90UB941-MODE_SEL-configure]: /images/ds90ub941_mode_sel_configure.png
 
 [goodix-official-website]: https://www.goodix.com/
+[DS90UB948-GPIO-INTERFACE]: /images/ds90ub948-gpio-interface.png
+
