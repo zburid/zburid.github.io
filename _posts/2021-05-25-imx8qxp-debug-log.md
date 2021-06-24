@@ -123,7 +123,7 @@ $ git switch -c imx_5.4.24_2.1.0
 
 参考文档：
 
-[iMX8QXP: Use RPMSG to wake up M4 and A35(https://community.nxp.com/docs/DOC-343113)
+[iMX8QXP: Use RPMSG to wake up M4 and A35](https://community.nxp.com/docs/DOC-343113)
 
 
 

@@ -108,7 +108,7 @@ var article_content = render(article_html)
 $("article").html(article_content);
 ```
 
-然后后端只需要实现类似于文档管理工具即可，依据需求实时生成`JSON`文档即可，在类似于主页或者归档的页面时，就可以类似于解析`MarkDown`一样采用`XHR`获取相应的`JSON`文档并解析显示到页面上，所以只需要很少的后端服务功能即可。基于此，当时还要想着使用之前买的但一直在吃灰的Linux开发板[FirePrime][FirePrime]作为服务器：
+然后后端只需要实现类似于文档管理工具即可，依据需求实时生成`JSON`文档即可，在类似于主页或者归档的页面时，就可以类似于解析`MarkDown`一样采用`XHR`获取相应的`JSON`文档并解析显示到页面上，所以只需要很少的后端服务功能即可。基于此，当时还要想着使用之前买的但一直在吃灰的`Linux`开发板[FirePrime][FirePrime]作为服务器：
 
 ![FirePrime四核卡片电脑开源平台][FirePrimeHw]
 
@@ -118,11 +118,44 @@ $("article").html(article_content);
 
 现在想想还是太麻烦了，对于我这样的WEB菜鸟，采用`Jekyll + Github`已经完全足够了。
 
+
+
 ### 四、定制化博客
-#### 1、参考文档
-待定
-#### 2、配置主题
-待定
+#### 1、添加评论框
+添加[`gitmen`][gitmen]评论系统，详细步骤见[链接🔗][add-gitment-to-jekyll]。需要注意的是申请`Github OAuth Application`时，填写的`Authorization callback URL` 一定要写自己`Github Pages`的`URL`，也就是自己博客的地址，比如：`https://xxxx.github.io/`。
+
+
+
+#### 2、相关配置
+* 添加公式解析
+
+  在`_includes/head.html`中添加`MathJax`：
+
+  ```html
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  ```
+
+* 添加文章隐藏
+
+  在每个文章描述中添加`show`字段：
+
+  ```markdown
+  ---
+  show: true
+  ---
+  ```
+
+  在`_layouts/home.html`中添加对每篇文章该字段的判断：
+
+  ```text
+  for post in site.posts
+      if post.show
+          ...
+      endif
+  endfor
+  ```
+
+
 
 [jekyll-docs]: https://jekyllrb.com/docs/home
 [jekyll-gh]:   https://github.com/jekyll/jekyll
@@ -139,3 +172,5 @@ $("article").html(article_content);
 [FirePrimeHw]: http://www.t-firefly.com/themes/t-firefly/public/assets/images/prime/01.jpg
 [OrayHSK]: http://hsk.oray.com/
 [OrayHSB]: http://static.orayimg.com/peanuthull/img/device_04_141215.jpg
+[add-gitment-to-jekyll]: https://www.cnblogs.com/jacobpan/archive/2017/07/18/7200512.html
+[gitmen]: https://github.com/imsun/gitment
