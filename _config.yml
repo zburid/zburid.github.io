@@ -54,3 +54,8 @@ highlighter: rouge
 #   - vendor/cache/
 #   - vendor/gems/
 #   - vendor/ruby/
+
+# gitment
+comment_gitment_repo: zburid.github.io
+comment_gitment_clientId: 0b9e7d74f237b4880129
+comment_gitment_clientSecret: c7e0e4fd5d2dae18d1a5eb886698d33318027482
