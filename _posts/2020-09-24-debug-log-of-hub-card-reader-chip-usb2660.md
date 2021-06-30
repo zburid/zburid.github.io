@@ -497,22 +497,53 @@ index 0ff5f98..4be52e1 100755
 +
  int DirectVolume::handleBlockEvent(NetlinkEvent *evt) {
      const char *dp = evt->findParam("DEVPATH");
-+    bool issd = isSDCardId(dp);
-
++    static char latest_sdcard_block[16] = {0};
++    bool issd = false;
++    int action = evt->getAction();
      int connectedType = 0;
      PathCollection::iterator  it;
-+
-+
+
++    if (action == NetlinkEvent::NlActionRemove) {
++        if (latest_sdcard_block[0])
++            issd = strstr(dp, latest_sdcard_block);
++    } else {
++        issd = isSDCardId(dp);
++    }
+
      for (it = mPaths->begin(); it != mPaths->end(); ++it) {
          connectedType++;
 -        if (strstr(dp, *it)) {
-+        bool is_det_sd = strstr(*it, "sdb");
++        bool is_det_sd = strstr(*it, "sdb"); /* In fstab sdb mean the sdcard mount information */
 +        SLOGE("handleBlockEvent: %s: %d/%d", *it, is_det_sd, issd);
 +        if ((is_det_sd && issd) || (!is_det_sd && !issd)) {
              /* We can handle this disk */
+-            int action = evt->getAction();
+             const char *devtype = evt->findParam("DEVTYPE");
+             int major = atoi(evt->findParam("MAJOR"));
+             int minor = atoi(evt->findParam("MINOR"));
+@@ -200,6 +206,10 @@ int DirectVolume::handleBlockEvent(NetlinkEvent *evt) {
+                     }
+                     setStorageType(connectedType);
+                     handleDiskAdded(dp, evt);
++                    if (issd) {
++                        strncpy(latest_sdcard_block, strrchr(dp, '/'), 16);
++                        latest_sdcard_block[4] = '\0';
++                    }
+                 } else {
+                     if ((mDiskMajor != major) || (mDiskMinor > minor)/* || (mDiskMinor+15 < minor)*/) {
+                         break;
+@@ -223,6 +233,9 @@ int DirectVolume::handleBlockEvent(NetlinkEvent *evt) {
+                     }
+                     setStorageType(NULL);
+                     handleDiskRemoved(dp, evt);
++                    if (issd) {
++                        latest_sdcard_block[0] = '\0';
++                    }
+                 } else {
 ```
 
 参考资料：
+
 [Android存储系统解析](https://blog.csdn.net/gulinxieying/article/details/78676706)
 
 [Udev triggers are not firing on insert of CF card into USB card reader (anymore)](https://unix.stackexchange.com/questions/38582/udev-triggers-are-not-firing-on-insert-of-cf-card-into-usb-card-reader-anymore)
