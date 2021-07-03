@@ -284,7 +284,23 @@ ser_dsireg_write 0 0x05 0x14                # Set DSI0 TSKIP_CNT value
 i2cset -fy $i2cport $seraddr 0x01 0x00 b    # Release DSI/DIGITLE reset
 ```
 
-通常其他硬件等方面配置正常的话，如上的操作基本上可以实现屏幕的显示。
+除此之外，还需要配置`DS90UB948`使能相应的`GPIO`输出：
+
+![DS90UB948 GPIO接口][DS90UB948-GPIO-INTERFACE]
+
+通过查看`DS90UB948`中`GPIO`的手册：
+
+![948 GPIO 寄存器手册][ds90ub948_gpio_register_manual]
+
+写入相关的值使能`LCD`显示和背光功能：
+
+```shell
+i2cset -fy $i2cport $desaddr 0x1A 0x09 b    # lcd_en：使能LCD的输入
+i2cset -fy $i2cport $desaddr 0x1E 0x90 b    # lcd_led_pwm：背光显示
+i2cset -fy $i2cport $desaddr 0x1F 0x09 b    # lcd_led_en：背光显示
+```
+
+通常来说，硬件等方面配置正常的话，如上的操作基本上可以实现屏幕的显示。
 
 ### 3、相关问题
 
@@ -495,27 +511,114 @@ MODULE_LICENSE("GPL");
 
 ## 四、TP功能调试
 
-采用`Goodix`（[汇顶科技][goodix-official-website]）的`GT9XX`系列触摸屏，通过`FPD-Link`传输`I2C`和`GPIO/IRQ`信号，来获取触摸信息并控制`LCD`背光：
+采用`Goodix`（[汇顶科技][goodix-official-website]）的`GT9XX`系列触摸屏，通过`FPD-Link`传输`I2C`和`GPIO/IRQ`信号，来获取触摸中断信号并控制`TP`复位：
 
-![DS90UB948 GPIO接口][DS90UB948-GPIO-INTERFACE]
+![Goodix触摸屏接口座子][GOODIX-TP-SEAT]
 
 
 
 ### 1、TP调试
 
-#### 1.1 FPD-Link通路
+先用命令配置寄存器值，实现远程GPIO的功能控制。再实现远程透传，实现触摸驱动功能。
 
+#### 1.1 测试GPIO
 
+首先需要将需要的`GPIO`管脚配置为复用为普通`IO`口：
 
+```diff
+pinctrl_i2c0_mipi_lvds0: mipi_lvds0_i2c0_grp {
+    fsl,pins = <
+        IMX8QXP_MIPI_DSI0_I2C0_SCL_MIPI_DSI0_I2C0_SCL     0xc6000020
+        IMX8QXP_MIPI_DSI0_I2C0_SDA_MIPI_DSI0_I2C0_SDA     0xc6000020
+-       IMX8QXP_MIPI_DSI0_GPIO0_01_LSIO_GPIO1_IO28        0x00000020
++       IMX8QXP_MIPI_DSI0_GPIO0_00_LSIO_GPIO1_IO27        0x00000020
++       IMX8QXP_MIPI_CSI0_I2C0_SCL_LSIO_GPIO3_IO05        0x00000020
+    >;
+};
+```
 
+编译烧写固件，通过`export`来控制`pin`脚电平，确认`pin`脚配置可用：
 
+```shell
+cd sys/class/gpio/
+#lsio_gpio1 27
+echo 59 > export && cd gpio59
+echo  out > direction
+echo 1 > value
+echo 0 > value
+echo 59 > unexport
 
+cd sys/class/gpio/
+#lsio_gpio3 5
+echo 101 > export && cd gpio101
+echo  out > direction
+echo 1 > value
+echo 0 > value
+echo 60 > unexport
+```
 
-#### 1.2 功能调试
+通过配置`DS90UB948`寄存器，设置与`TP`相连的`948`管脚的电平信号如`TP`说明书中所要求的时序：
 
+* 设定地址为`0x28/0x29`的复位时序：
 
+  ![GT9XX 0x28/0x29 复位时序图][gt9xx_reset_sequence_0x2x]
 
+* 设定地址为`0xBA/0xBB`的复位时序：
 
+  ![GT9XX 0xBA/0xBB 复位时序图][gt9xx_reset_sequence_0xbx]
+
+```shell
+# 初始化 TP 配置其 I2C 地址 0x5d
+i2cset -fy $i2cport $desaddr 0x1D 0x01 b
+i2cset -fy $i2cport $desaddr 0x1E 0x91 b
+sleep 0.5
+i2cset -fy $i2cport $desaddr 0x1D 0x09 b
+
+# 初始化 TP 配置其 I2C 地址 0x14
+i2cset -fy $i2cport $desaddr 0x1D 0x01 b
+i2cset -fy $i2cport $desaddr 0x1E 0x91 b
+sleep 0.2
+i2cset -fy $i2cport $desaddr 0x1E 0x99 b
+sleep 0.2
+i2cset -fy $i2cport $desaddr 0x1D 0x09 b
+sleep 0.5
+
+# 检测总线上是否有 TP 地址
+i2cdetect -y 16
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:          -- -- -- -- -- -- -- -- -- UU -- -- --
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+20: -- -- -- -- -- -- -- -- -- -- -- -- UU -- -- --
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- 5d -- --
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+70: -- -- -- -- -- -- -- --
+```
+
+#### 1.2 测试透传
+
+配置远程`GPIO`控制功能，即`SOC`控制读取`GPIO`透传到`TP`侧：
+
+```text
+SOC <=> 941 <=> 948 <=> TP
+```
+
+![DS90UB94X 前后向通道][ds90ub94x_forward_back_channel]
+
+根据芯片手册，配置寄存器实现通路输入输出：
+
+```shell
+#gpio0打通成功
+i2cset -fy $i2cport $seraddr 0x0D 0x03 b
+i2cset -fy $i2cport $desaddr 0x1D 0x05 b
+
+#gpio1打通成功
+i2cset -fy $i2cport $seraddr 0x0E 0x03 b
+i2cset -fy $i2cport $desaddr 0x1E 0x95 b
+```
+
+再通过`export`测试远程透传`GPIO`功能是否成功。
 
 
 
@@ -554,12 +657,79 @@ diff --git vendor/nxp-opensource/kernel_imx/drivers/input/touchscreen/Makefile
 
 
 
+#### 2.2 配置DTS
+
+根据需要，配置`DTS`如下：
+
+```dts
+&i2c0_mipi_lvds0 {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    pinctrl-names = "default";
+    pinctrl-0 = <&pinctrl_i2c0_mipi_lvds0>;
+    clock-frequency = <100000>;
+    status = "okay";
+
+    gt9xx-i2c@5d {
+        compatible = "goodix,gt9xx";
+        reg = <0x5d>;
+        status = "okay";
+        interrupt-parent = <&lsio_gpio3>;
+        interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
+        reset-gpios = <&lsio_gpio1 27 GPIO_ACTIVE_HIGH>;
+        irq-gpios = <&lsio_gpio3 5 IRQ_TYPE_LEVEL_LOW>;
+        irq-flags = <2>;
+
+        touchscreen-max-id = <11>;
+        touchscreen-size-x = <1080>;
+        touchscreen-size-y = <1920>;
+        touchscreen-max-w = <512>;
+        touchscreen-max-p = <512>;
+        //touchscreen-key-map = <172>, <158>; /*KEY_HOMEPAGE=172, KEY_BACK=158，KEY_MENU=139*/
+
+        goodix,type-a-report = <0>;
+        goodix,driver-send-cfg = <0>;
+        goodix,wakeup-with-reset = <0>;
+        goodix,resume-in-workqueue = <0>;
+        goodix,int-sync = <1>; /* don't modified it */
+        goodix,swap-x2y = <1>;
+        goodix,x-reverse = <1>;
+        goodix,y-reverse = <1>;
+        goodix,esd-protect = <0>;
+        goodix,auto-update-cfg = <0>;
+        goodix,power-off-sleep = <0>;
+        goodix,pen-suppress-finger = <0>;
+        goodix,cfg-group0 = [
+            42 D0 02 00 05 05 75 01 01 0F 24
+            0F 64 3C 03 05 00 00 00 02 00 00
+            00 16 19 1C 14 8C 0E 0E 24 00 31
+            0D 00 00 00 83 33 1D 00 41 00 00
+            00 00 00 08 0A 00 2B 1C 3C 94 D5
+            03 08 00 00 04 93 1E 00 82 23 00
+            74 29 00 69 2F 00 5F 37 00 5F 20
+            40 60 00 F0 40 30 55 50 27 00 00
+            00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 14 19 00 00
+            50 50 02 04 06 08 0A 0C 0E 10 12
+            14 16 18 1A 1C 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 1D
+            1E 1F 20 21 22 24 26 28 29 2A 1C
+            18 16 14 13 12 10 0F 0C 0A 08 06
+            04 02 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 9C 01];
+    };
+};
+```
+
+
+
 #### 2.2 适配驱动
 
-
+由于TP驱动需要读取和设置远程`GPIO`状态，而远程`GPIO`读取设置函数需要由`DS90UB94X`驱动实现，所以需要在`DS90UB94X`驱动中`export`出来：
 
 
 ```cpp
+// vendor/nxp-opensource/kernel_imx/drivers/gpu/drm/bridge/ds90ub94x.c
 /* set remote gpio0 output */
 void ds90ub94x_tp_rst_output(void)
 {
@@ -606,10 +776,102 @@ void ds90ub94x_set_i2c(unsigned short addr)
 EXPORT_SYMBOL(ds90ub94x_set_i2c);
 ```
 
+最后修改`gt9xx.c`，实现对`TP`驱动的定制：
 
-## 五、副屏调试
+```diff
+// vendor/nxp-opensource/kernel_imx/drivers/input/touchscreen/gt9xx/gt9xx.c
+
+@@ -23,6 +23,7 @@
+#include <linux/pinctrl/consumer.h>
+#include <linux/input/mt.h>
+#include "gt9xx.h"
++#include <linux/ds90ub94x.h>
+#define GOODIX_COORDS_ARR_SIZE    4
+#define PROP_NAME_SIZE        24
+@@ -649,6 +661,7 @@ void gtp_int_output(struct goodix_ts_data *ts, int level)
+     if (!ts->pdata->int_sync)
+         return;
++    ds90ub94x_tp_int_output();
+     if (level == 0) {
+         if (ts->pinctrl.pinctrl)
+             pinctrl_select_state(ts->pinctrl.pinctrl,
+@@ -681,8 +694,10 @@ void gtp_int_sync(struct goodix_ts_data *ts, s32 ms)
+         pinctrl_select_state(ts->pinctrl.pinctrl,
+                      ts->pinctrl.int_input);
+     } else if (gpio_is_valid(ts->pdata->irq_gpio)) {
++        ds90ub94x_tp_int_output();
+         gpio_direction_output(ts->pdata->irq_gpio, 0);
+         msleep(ms);
++        ds90ub94x_tp_int_input();
+         gpio_direction_input(ts->pdata->irq_gpio);
+     } else {
+         dev_err(&ts->client->dev, "Failed sync int pin\n");
+@@ -709,7 +724,8 @@ void gtp_reset_guitar(struct i2c_client *client, s32 ms)
+         dev_warn(&client->dev, "reset failed no valid reset gpio");
+         return;
+     }
+
++    ds90ub94x_set_i2c(client->addr);
++    ds90ub94x_tp_rst_output();
+     gpio_direction_output(ts->pdata->rst_gpio, 0);
+     usleep_range(ms * 1000, ms * 1000 + 100);    /*  T2: > 10ms */
+@@ -719,6 +735,7 @@ void gtp_reset_guitar(struct i2c_client *client, s32 ms)
+     gpio_direction_output(ts->pdata->rst_gpio, 1);
+     usleep_range(6000, 7000);        /*  T4: > 5ms */
++    ds90ub94x_tp_rst_input();
+     gpio_direction_input(ts->pdata->rst_gpio);
+     gtp_int_sync(ts, 50);
+@@ -1470,6 +1487,7 @@ static int gtp_request_io_port(struct goodix_ts_data *ts)
+             return -ENODEV;
+         }
++        ds90ub94x_tp_int_input();
+         gpio_direction_input(ts->pdata->irq_gpio);
+         dev_info(&ts->client->dev, "Success request irq-gpio\n");
+     }
+@@ -1487,6 +1505,7 @@ static int gtp_request_io_port(struct goodix_ts_data *ts)
+             return -ENODEV;
+         }
++        ds90ub94x_tp_rst_input();
+         gpio_direction_input(ts->pdata->rst_gpio);
+         dev_info(&ts->client->dev,  "Success request rst-gpio\n");
+     }
+```
 
 
+
+### 3、调试命令
+
+* 查看中断请求记录，用于查看`TP`触摸中断
+
+  ```shell
+  cat /proc/interrupts
+  ```
+
+* 查看输入设备节点
+
+  ```shell
+  ls /dev/input/
+  ```
+
+
+* 查看输入设备的信息
+
+  ```shell
+  cat /proc/bus/input/devices
+  ```
+
+* 查看`event`上报信息
+
+  ```shell
+  getevent
+  ```
+
+* 查看触摸输入指针位置
+
+  ```shell
+  settings put system show_touches 1
+  settings put system pointer_location 1
+  ```
 
 
 参考文档：
@@ -632,4 +894,11 @@ EXPORT_SYMBOL(ds90ub94x_set_i2c);
 
 [goodix-official-website]: https://www.goodix.com/
 [DS90UB948-GPIO-INTERFACE]: /images/ds90ub948-gpio-interface.png
+[ds90ub948_gpio_register_manual]: /images/ds90ub948_gpio_register_manual.png
+[GOODIX-TP-SEAT]: /images/imx8qxp-goodix-tp-seat.png
+[gt9xx_reset_sequence_0x2x]: /images/gt9xx_reset_seq_0x2x.png
+[gt9xx_reset_sequence_0xbx]: /images/gt9xx_reset_seq_0xbx.png
+[ds90ub94x_forward_back_channel]: /images/ds90ub94x_forward_back_channel.png
+
+
 
